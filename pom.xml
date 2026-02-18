@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>4.0.2</version>
+		<relativePath/>
+	</parent>
+
+	<groupId>com.fran.dev</groupId>
+	<artifactId>potjera</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>  <!-- CRITICAL: must be pom, not jar -->
+
+	<modules>
+		<module>PotjeraWebScraper</module>
+		<!-- <module>PotjeraDb</module> add later -->
+	</modules>
+
+	<properties>
+		<java.version>25</java.version>
+		<spring-ai.version>2.0.0-M2</spring-ai.version>  <!-- moved here from child -->
+	</properties>
+
+	<!-- shared across ALL modules -->
+	<dependencies>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<!-- version management without forcing deps on every module -->
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-bom</artifactId>
+				<version>${spring-ai.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<pluginManagement>  <!-- manage plugin versions/config without forcing them on children -->
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<configuration>
+						<annotationProcessorPaths>
+							<path>
+								<groupId>org.projectlombok</groupId>
+								<artifactId>lombok</artifactId>
+							</path>
+							<path>
+								<groupId>org.springframework.boot</groupId>
+								<artifactId>spring-boot-configuration-processor</artifactId>
+							</path>
+						</annotationProcessorPaths>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
+</project>
