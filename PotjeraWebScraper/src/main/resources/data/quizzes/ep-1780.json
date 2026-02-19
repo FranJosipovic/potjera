@@ -1,0 +1,331 @@
+{
+  "quickFireQuestions" : {
+    "items" : [ {
+      "question" : "Koje je kosti ljudskog tijela latinsko ime klavikula?",
+      "answer" : "Ključna kost"
+    }, {
+      "question" : "Koja se izmišljena riječ u sintagmi rimuje s fensi...?",
+      "answer" : "Šmensi"
+    }, {
+      "question" : "Koji slikar s Krete ima muzej u španjolskom Toledu?",
+      "answer" : "El Greco"
+    }, {
+      "question" : "U kojem filmu Billa Murraya svako jutro budi pjesma \"I Got You Babe\"?",
+      "answer" : "Beskrajan dan"
+    }, {
+      "question" : "Iz kojeg je grada na Siciliji vladao tiranin Dionizije Stariji?",
+      "answer" : "Sirakuza"
+    }, {
+      "question" : "Koliko kutnih minuta ima jedan stupanj?",
+      "answer" : "60"
+    }, {
+      "question" : "Čija je kći bila lijepa Jana iz pjesme Augusta Šenoe?",
+      "answer" : "Ribara starog"
+    }, {
+      "question" : "Koji je Agamemnonov brat bio spartanski kralj?",
+      "answer" : "Menelaj"
+    }, {
+      "question" : "Partija šaha može početi pomicanjem pješaka ili koje druge figure?",
+      "answer" : "Konja"
+    }, {
+      "question" : "Koja država zauzima 40,7% kopna Južne Amerike?",
+      "answer" : "Brazil"
+    }, {
+      "question" : "Koji se Marvelov superjunak 2017. vratio kući, a 2019. se našao daleko od kuće?",
+      "answer" : "Spider-Man"
+    }, {
+      "question" : "Koja je stopljenica nastala stapanjem riječi motor i hotel?",
+      "answer" : "Motel"
+    }, {
+      "question" : "Selo Kostanje leži uz Cetinu, a selo Kistanje uz koju rijeku?",
+      "answer" : "Krku"
+    }, {
+      "question" : "Koje su godine Martin Luther King i Robert Kennedy ubijeni u razmaku od dva mjeseca?",
+      "answer" : "1968."
+    }, {
+      "question" : "Kojim je filmom Jamesa Camerona nadahnuta predstava \"Toruk – Prvi let\" Cirque du Soleil?",
+      "answer" : "Avatar"
+    }, {
+      "question" : "Koja je osnovna SI jedinica pomnožena s njutnom jednaka džulu?",
+      "answer" : "Metar"
+    }, {
+      "question" : "Kome Hamlet u Shakespeareovoj tragediji poručuje \"idi u samostan, idi s Bogom\"?",
+      "answer" : "Ofeliji"
+    }, {
+      "question" : "Proučavanjem površine kojeg se nebeskog tijela bavi selenografija?",
+      "answer" : "Mjeseca"
+    }, {
+      "question" : "Koji plesni naslov povezuje virovitičku grupu Vatra i sinjsku grupu M.O.R.T.?",
+      "answer" : "Tango"
+    }, {
+      "question" : "Koji napitak ima inačice razgovoruša, šutkuša...?",
+      "answer" : "Kava"
+    }, {
+      "question" : "Koja se mlada glumica, pobjednica u showu \"Zvijezde pjevaju\", proslavila u TV seriji \"Uspjeh\"?",
+      "answer" : "Tara Thaller"
+    }, {
+      "question" : "Veliko Ropsko jezero najdublje je jezero kojeg kontinenta?",
+      "answer" : "Sjeverne Amerike"
+    }, {
+      "question" : "Prema kojoj se zvijeri u prenesenom značenju zove najveći i najbolji dio nečega?",
+      "answer" : "Lavu"
+    }, {
+      "question" : "U kojem sportu libero ne smije raditi blokove niti smečati?",
+      "answer" : "Odbojci"
+    }, {
+      "question" : "Koji je glumac imao sporedne uloge u filmovima \"12 majmuna\" i \"12 godina ropstva\"?",
+      "answer" : "Brad Pitt"
+    }, {
+      "question" : "Koji je rat završio padom Saigona 30. travnja 1975.?",
+      "answer" : "Vijetnamski rat"
+    }, {
+      "question" : "Simetrala pravog kuta dijeli ga na dva kuta od koliko stupnjeva?",
+      "answer" : "45"
+    }, {
+      "question" : "Koja je polinezijska država u anagramu pridjeva \"nogat\"?",
+      "answer" : "Tonga"
+    }, {
+      "question" : "Koji je najraniji mjesec u godini u kojem se može slaviti katolički Uskrs?",
+      "answer" : "Ožujak"
+    }, {
+      "question" : "Naziv koje se belgijske glazbene grupe sa španjolskog prevodi kao \"idi s Bogom\"?",
+      "answer" : "Vaya Con Dios"
+    }, {
+      "question" : "Koji -izam dolazi od nekadašnje prakse u kojoj su pape i biskupi pogodovali nećacima?",
+      "answer" : "Nepotizam"
+    }, {
+      "question" : "Iz kojeg je grada Raja u pjesmi \"Fildžan viška\" Zabranjenog pušenja?",
+      "answer" : "Sarajevo"
+    }, {
+      "question" : "U kojem je filmsko-književnom serijalu Šojka Rugalica simbol pobune?",
+      "answer" : "Igre gladi"
+    }, {
+      "question" : "Koji je u zoologiji rašireni naziv za bodljikavo prase?",
+      "answer" : "Dikobraz"
+    }, {
+      "question" : "Koji se kontinent nalazi na sve četiri hemisfere?",
+      "answer" : "Afrika"
+    }, {
+      "question" : "Koji je nogometaš NK Zagreba bio najbolji strijelac prvenstva u sezoni osvajanja naslova?",
+      "answer" : "Ivica Olić"
+    }, {
+      "question" : "Koja Madonnina pjesma iz 1986. govori o tinejdžerskoj trudnoći?",
+      "answer" : "Papa Don't Preach"
+    }, {
+      "question" : "Koji je u šali glavni grad Zagore i najdraži Grdovićev grad?",
+      "answer" : "Vinograd"
+    }, {
+      "question" : "Koja je najveća znamenka u dekadskom brojnom sustavu?",
+      "answer" : "9"
+    }, {
+      "question" : "Amerikanci su imali svoj Vijetnam. Koja je azijska država Sovjetski Vijetnam?",
+      "answer" : "Afganistan"
+    }, {
+      "question" : "Koju životinju bijele boje Alisa prvu susreće u Zemlji čudesa?",
+      "answer" : "Zeca"
+    }, {
+      "question" : "Pojas tišine, to jest slabih vjetrova, u blizini koje je najduže paralele?",
+      "answer" : "Ekvatora"
+    }, {
+      "question" : "Koji reper logično vodi dokumentarnu emisiju “Fifty Ways to Catch a Killer”?",
+      "answer" : "50 Cent"
+    }, {
+      "question" : "Koju je državu ekonomski pogodilo zatvaranje hotelskog kompleksa na Svetom Stefanu?",
+      "answer" : "Crnu Goru"
+    }, {
+      "question" : "Po kojem je svom imenu, više nego po prezimenu, poznatiji 41.-godišnji NBA igrač nadimka King James?",
+      "answer" : "LeBron"
+    }, {
+      "question" : "Koji su se skandinavski ratnici u navigaciji koristili “sunčevim kamenom”?",
+      "answer" : "Vikinzi"
+    }, {
+      "question" : "Prevedite moto “Orbis non sufficit” s latinskog na hrvatski?",
+      "answer" : "Svijet nije dovoljan"
+    }, {
+      "question" : "Koji je pjevač na lijevu potkoljenicu istetovirao mačka Stipu?",
+      "answer" : "Baby Lasagna"
+    }, {
+      "question" : "Bolivija je 2024. postala do danas posljednja članica koje trgovinske organizacije?",
+      "answer" : "MERCOSUR-a"
+    }, {
+      "question" : "Tko je u romanu Roalda Dahla pronašao posljednju zlatnu ulaznicu?",
+      "answer" : "Charlie"
+    }, {
+      "question" : "Na kojem je grčkom poluotoku grad i luka Kalamata?",
+      "answer" : "Peloponezu"
+    }, {
+      "question" : "Koji je Coppolin film 1979. nagrađen Zlatnom palmom?",
+      "answer" : "Apocalypse Now"
+    }, {
+      "question" : "Glavni grad koje američke savezne države je Tallahassee?",
+      "answer" : "Floride"
+    }, {
+      "question" : "Nizozemka Miep Gies sačuvala je čiji dnevnik i predala ga njenom ocu Ottu?",
+      "answer" : "Anne Frank"
+    }, {
+      "question" : "Koji je Richard skladao “Alpsku simfoniju”?",
+      "answer" : "Richard Strauss"
+    }, {
+      "question" : "Koji je bend na albumu “Waiting for the Sun” snimio pjesmu “Hello, I Love You”?",
+      "answer" : "The Doors"
+    }, {
+      "question" : "U kojem filmu Ken ružičastu kuću pretvara u Mojo Dojo Casa House?",
+      "answer" : "Barbie"
+    }, {
+      "question" : "U kojem su časopisu prvi put objavljeni romani “Zlatarovo zlato” i “U registraturi”?",
+      "answer" : "Vienac"
+    }, {
+      "question" : "Zohran Mamdani izabran je za gradonačelnika kojeg američkog grada?",
+      "answer" : "New Yorka"
+    }, {
+      "question" : "Ime parfema “Fleur de Mal” inspirirano je čijom zbirkom pjesama?",
+      "answer" : "Charlesa Baudelairea"
+    }, {
+      "question" : "Koji zaljev Crnogorskog primorja nazivaju “najjužim fjordom Europe” iako on to nije?",
+      "answer" : "Bokokotorski zaljev"
+    }, {
+      "question" : "Koju je operu Wagner napisao inspiriran putovanjem jedrenjakom u London?",
+      "answer" : "Ukleti Holandez"
+    }, {
+      "question" : "Stotine studenata ubijene su u Tlatelolcu 10 dana prije početka OI u kojem gradu?",
+      "answer" : "Ciudad de Méxicu"
+    }, {
+      "question" : "Po kojem je preminulom nogometašu nazvana avenija pokraj stadiona Benfice?",
+      "answer" : "Eusébiu"
+    }, {
+      "question" : "Koja se članica britanske kraljevske obitelji proslavila ulogom u TV seriji “Face”?",
+      "answer" : "Meghan Markle"
+    }, {
+      "question" : "Koji je švicarski grad između jezera Brienz i Thun?",
+      "answer" : "Interlaken"
+    }, {
+      "question" : "Iz kojeg su olimpijskog sporta nazivi flok, genaker i plov?",
+      "answer" : "Jedrenja"
+    }, {
+      "question" : "Georgios Kyriacos Panayiotou preminuo je 2016. godine, pod kojim nam je imenom on poznatiji?",
+      "answer" : "George Michael"
+    }, {
+      "question" : "Koje se zanimanje nalazi na popisu gradova u Krapinsko-zagorskoj županiji?",
+      "answer" : "Zlatar"
+    }, {
+      "question" : "Koji je politički spis Janka Draškovića podnaslovljen \"Razgovor darovan gospodi poklisarom\"?",
+      "answer" : "Disertacija"
+    }, {
+      "question" : "Tko je sin Randora, kralja fiktivne Eternije?",
+      "answer" : "Adam"
+    }, {
+      "question" : "Koja se riječ za pobjednika koristi za neobranjiv udarac u tenisu?",
+      "answer" : "Winner"
+    }, {
+      "question" : "Sedmeroslovno ime kojeg je hladnog vjetra nastalo po tome pto puše područjem pampâ?",
+      "answer" : "Pampero"
+    }, {
+      "question" : "Koji njemački pisac nije umro u Veneciji, nego u Zürichu?",
+      "answer" : "Thomas Mann"
+    }, {
+      "question" : "Koji je talijanski naziv srednjovjekovnog spjeva,čiji su dijelovi Inferno,... ?",
+      "answer" : "Božanstvena komedija"
+    } ],
+    "count" : 75
+  },
+  "multipleChoiceQuestions" : {
+    "items" : [ {
+      "question" : "Koja Hrvatska rijeka dijeli ime sa slovačkim gradom?",
+      "correctAnswer" : "C) Trnava",
+      "answers" : [ "A) Ilova", "B) Odra", "C) Trnava" ]
+    }, {
+      "question" : "Što je u naslovu romana u kojem je Julien Sorel glavni lik?",
+      "correctAnswer" : "C) Dvije boje",
+      "answers" : [ "A) Dva grada", "B) Dva osobna imena", "C) Dvije boje" ]
+    }, {
+      "question" : "Završetak koje je TV serije toliko razočarao gledatelje da su peticijom tražili ponovno snimanje posljednje sezone?",
+      "correctAnswer" : "A) Igre prijestolja",
+      "answers" : [ "A) Igre prijestolja", "B) Na putu prema dolje", "C) Žica" ]
+    }, {
+      "question" : "Britanska primatologinja Jane Goodall ustanovila je da su čimpanze...?",
+      "correctAnswer" : "C) Svejedi",
+      "answers" : [ "A) Biljojedi", "B) Mesojedi", "C) Svejedi" ]
+    }, {
+      "question" : "Čija je taktička uloga u Barceloni pod Hansijem Flickom evoluirala od krilnog napadača prema centralnije pozicioniranoj ulozi drugog napadača?",
+      "correctAnswer" : "B) Rafinhe",
+      "answers" : [ "A) Lewandowskog", "B) Rafinhe", "C) Rashforda" ]
+    }, {
+      "question" : "Tijekom koje konferencije je Clement Attlee zamijenio Winstona Churchilla?",
+      "correctAnswer" : "B) Potsdamske",
+      "answers" : [ "A) Jaltske", "B) Potsdamske", "C) Teheranske" ]
+    }, {
+      "question" : "Koji \"grad sa stotinu zvonika\" ima njih čak petsto?",
+      "correctAnswer" : "B) Prag",
+      "answers" : [ "A) Budimpešta", "B) Prag", "C) Varšava" ]
+    }, {
+      "question" : "U kojem je filmskom serijalu Dubrovnik glumio grad Canto Bight?",
+      "correctAnswer" : "C) Ratovi zvijezda",
+      "answers" : [ "A) Matrix", "B) Pobješnjeli Max", "C) Ratovi zvijezda" ]
+    }, {
+      "question" : "Karnaubski vosak koristi se u kozmeticii dentalnoj medicini, a još se naziva i...?",
+      "correctAnswer" : "A) Brazilskim voskom",
+      "answers" : [ "A) Brazilskim voskom", "B) Japanskim voskom", "C) Kanadskim voskom" ]
+    }, {
+      "question" : "Tko je od navedenih pripadnik kluba 27?",
+      "correctAnswer" : "C) Ivo Lola Ribar",
+      "answers" : [ "A) Ivan Goran Kovačić", "B) Ivan Šibl", "C) Ivo Lola Ribar" ]
+    }, {
+      "question" : "Koji se bend do 1978. zvao The Hype, a prije toga Feedback?",
+      "correctAnswer" : "C) U2",
+      "answers" : [ "A) Aerosmith", "B) Dire Straits", "C) U2" ]
+    }, {
+      "question" : "Koji je književnik bio pod prismotrom FBI-a zbog kolumne „Zabilješke starog pokvarenjaka”?",
+      "correctAnswer" : "A) Charles Bukowski",
+      "answers" : [ "A) Charles Bukowski", "B) Ernest Hemingway", "C) Jack Kerouac" ]
+    }, {
+      "question" : "U kojoj je bitki kršćane predvodio dvadesetogodišnji kralj koji je tijekom bitke poginuo?",
+      "correctAnswer" : "C) Mohačkoj",
+      "answers" : [ "A) Kosovskoj", "B) Krbavskoj", "C) Mohačkoj" ]
+    }, {
+      "question" : "Što je to Tereza37?",
+      "correctAnswer" : "B) Dugometražni igrani film",
+      "answers" : [ "A) Album zabavne glazbe", "B) Dugometražni igrani film", "C) Modni časopis" ]
+    }, {
+      "question" : "Naziv Pidgin English nastao je prema iskrivljenom kineskom izgovoru koje engleske riječi?",
+      "correctAnswer" : "A) Business",
+      "answers" : [ "A) Business", "B) Origin", "C) Pigeon" ]
+    }, {
+      "question" : "Rogoznica je smještena između Šibenika i Trogira, a Lokva Rogoznica...?",
+      "correctAnswer" : "A) Između Omiša i Makarske",
+      "answers" : [ "A) Između Omiša i Makarske", "B) Između Ploča i Metkovića", "C) Između Senja i Crikvenice" ]
+    }, {
+      "question" : "Što se u Hrvatskoj može registrirati uz temeljni kapital od 2.500 eura?",
+      "correctAnswer" : "B) d.o.o.",
+      "answers" : [ "A) d.d.", "B) d.o.o.", "C) j.d.o.o." ]
+    }, {
+      "question" : "Iz kojeg je kluba Jeremy Doku 2023. prešao u City, a Desire Doue 2024. u PSG?",
+      "correctAnswer" : "C) Rennes",
+      "answers" : [ "A) Lille", "B) Nantes", "C) Rennes" ]
+    }, {
+      "question" : "Tko u filmu „Otimači izgubljenog kovčega” traži Kovčeg saveza kako bi svoju vojsku učinili nepobjedivom?",
+      "correctAnswer" : "B) Nacisti",
+      "answers" : [ "A) Crvenoarmejci", "B) Nacisti", "C) Zelenokaderaši" ]
+    }, {
+      "question" : "\"Udomljavanje je fora\", kažu gdje?",
+      "correctAnswer" : "A) U Dumovcu",
+      "answers" : [ "A) U Dumovcu", "B) U Jakuševcu", "C) U Remetincu" ]
+    }, {
+      "question" : "Na kojoj stranici Wikipedije o Hrvatskoj piše latinski citat „Civitas Europaea, ad finem Maris Mediterranei, Mediae Europae, et Balcaniae...”?",
+      "correctAnswer" : "A) Na latinskoj",
+      "answers" : [ "A) Na latinskoj", "B) Na rumunjskoj", "C) Na talijanskoj" ]
+    }, {
+      "question" : "Koja se biljka koristi kao prirodno sredstvo protiv stresa, nervoze i nesanice?",
+      "correctAnswer" : "C) Valerijana",
+      "answers" : [ "A) Klaudijana", "B) Lucijana", "C) Valerijana" ]
+    }, {
+      "question" : "Česta zamjena za otrovnu živu u termometrima je galinstan, slitina galija, indija i kojeg još elementa?",
+      "correctAnswer" : "B) Kositra",
+      "answers" : [ "A) Antimona", "B) Kositra", "C) Tantala" ]
+    }, {
+      "question" : "Koliko stupnjeva Celzijevih treba iznositi propisana temperatura vode u bazenu za vaterpolo?",
+      "correctAnswer" : "C) Od 25 do 27",
+      "answers" : [ "A) Od 17 do 19", "B) Od 21 do 23", "C) Od 25 do 27" ]
+    } ],
+    "count" : 24
+  }
+}

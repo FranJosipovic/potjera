@@ -1,7 +1,7 @@
 package com.fran.dev.potjerawebscraper.services;
 
-import com.fran.dev.potjerawebscraper.models.MultipleChoiceQuestion;
-import com.fran.dev.potjerawebscraper.models.QuickFireQuestion;
+import com.fran.dev.potjerawebscraper.models.MultipleChoiceQuestionWeb;
+import com.fran.dev.potjerawebscraper.models.QuickFireQuestionWeb;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -36,8 +36,8 @@ public class QuizParserService {
      * Parses type 1: <div class="quiz-question" data-correct="B">
      * Contains a question <p> and multiple <button class="answer"> elements.
      */
-    public List<MultipleChoiceQuestion> parseMultipleChoiceQuestions(Document doc) {
-        List<MultipleChoiceQuestion> results = new ArrayList<>();
+    public List<MultipleChoiceQuestionWeb> parseMultipleChoiceQuestions(Document doc) {
+        List<MultipleChoiceQuestionWeb> results = new ArrayList<>();
 
         Elements questionDivs = doc.select("div.quiz-question");
 
@@ -56,13 +56,13 @@ public class QuizParserService {
                 }
             }
 
-            results.add(new MultipleChoiceQuestion(question, correctAnswerText, answers));
+            results.add(new MultipleChoiceQuestionWeb(question, correctAnswerText, answers));
         }
 
         return results;
     }
-    public List<MultipleChoiceQuestion> parseMultipleChoiceQuestions2(Document doc) {
-        List<MultipleChoiceQuestion> results = new ArrayList<>();
+    public List<MultipleChoiceQuestionWeb> parseMultipleChoiceQuestions2(Document doc) {
+        List<MultipleChoiceQuestionWeb> results = new ArrayList<>();
 
         // Handles both <li><p>...</p></li> and <li>direct text</li>
         Elements containers = doc.select("div.elementor-widget-container ul li p, div.elementor-widget-container ul li:not(:has(p))");
@@ -108,7 +108,7 @@ public class QuizParserService {
                     .filter(s -> !s.isEmpty())
                     .toList();
 
-            results.add(new MultipleChoiceQuestion(question, correctAnswer, answers));
+            results.add(new MultipleChoiceQuestionWeb(question, correctAnswer, answers));
         }
 
         return results;
@@ -117,8 +117,8 @@ public class QuizParserService {
     /**
      * Parses type 2: <p> containing a <b> question and a <span class="quiz-answer"> with the answer.
      */
-    public List<QuickFireQuestion> parseQuickFireQuestions(Document doc) {
-        List<QuickFireQuestion> results = new ArrayList<>();
+    public List<QuickFireQuestionWeb> parseQuickFireQuestions(Document doc) {
+        List<QuickFireQuestionWeb> results = new ArrayList<>();
 
         // Select all <p> tags that contain a span.quiz-answer
         Elements paragraphs = doc.select("p:has(span.quiz-answer)");
@@ -133,7 +133,7 @@ public class QuizParserService {
             String question = questionEl.text();
             String answer = answerEl.text();
 
-            results.add(new QuickFireQuestion(question, answer));
+            results.add(new QuickFireQuestionWeb(question, answer));
         }
 
         return results;

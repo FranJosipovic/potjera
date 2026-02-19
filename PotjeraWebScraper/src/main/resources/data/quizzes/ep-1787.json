@@ -1,0 +1,305 @@
+{
+  "quickFireQuestions" : {
+    "items" : [ {
+      "question" : "Koji interpunkcijski znak označava faktorijel nekog broja?",
+      "answer" : "Uskličnik"
+    }, {
+      "question" : "Koji je europski glavni grad smješten u podnožju 2292 metra visoke planine Vitoše?",
+      "answer" : "Sofija"
+    }, {
+      "question" : "Koja se dugovječna britanska TV-serija u Sloveniji prikazuje pod naslovom “Umori na podeželju”?",
+      "answer" : "“Ubojstva u Midsomeru”"
+    }, {
+      "question" : "Iz kojeg je jezika u hrvatski ušla riječ “šank”?",
+      "answer" : "Njemačkog"
+    }, {
+      "question" : "Koji je preminuli australski glumac nastupio u filmovima “Legenda o vitezu” i “Vitez tame”?",
+      "answer" : "Heath Ledger"
+    }, {
+      "question" : "Koji je pjesnik karijeru započeo “Hrastovačkim nokturnom”, a završio sonetom “Notturno”?",
+      "answer" : "Antun Gustav Matoš"
+    }, {
+      "question" : "Koja je najbrojnija skupina člankonožaca i životinja uopće?",
+      "answer" : "Kukci"
+    }, {
+      "question" : "“Što je ovo sve oko mene”, ako je moje ime Davorin Bogović?",
+      "answer" : "“Crno-bijeli svijet”"
+    }, {
+      "question" : "Koja je naša služba za pružanje pomoći unesrećenima u planinama osnovana 1950.?",
+      "answer" : "HGSS"
+    }, {
+      "question" : "Kojim su ediktom 313. godine službeno završili progoni kršćana u Rimskom Carstvu?",
+      "answer" : "Milanskim"
+    }, {
+      "question" : "U kojem su gradu dominikanci osnovali prvo sveučilište u Hrvatskoj?",
+      "answer" : "Zadar"
+    }, {
+      "question" : "Iz koje kartaške igre potječe izraz kao kec na deset?",
+      "answer" : "Ajnc"
+    }, {
+      "question" : "Oko kojeg oceana se prostire pojas vulkana koji čine tzv. Vatreni prsten?",
+      "answer" : "Tihog oceana"
+    }, {
+      "question" : "Gdje se u naslovima djela nalaze Šoljanovi “Drugi ljudi” i Vukotićeva “Krava”?",
+      "answer" : "Na Mjesecu"
+    }, {
+      "question" : "U kojem su europskom glavnom gradu rođene Mila Jovovich i Golda Meir?",
+      "answer" : "Kijevu"
+    }, {
+      "question" : "Kako još zovemo gmazove prema njihovu latinskom imenu?",
+      "answer" : "Reptili"
+    }, {
+      "question" : "Ako ima svega u izobilju, kažemo da ne nedostaje čijeg mlijeka?",
+      "answer" : "Ptičjeg"
+    }, {
+      "question" : "Koji je glazbenik u pjesmi iz 1971. zamišljao da nema država, religija i da svi žive u miru?",
+      "answer" : "John Lennon"
+    }, {
+      "question" : "Koji je otok u New Yorku ...?",
+      "answer" : "Manhattan"
+    }, {
+      "question" : "Pod kojim se imenom Louis-Napoléon Bonaparte 1852. nakon plebiscita proglasio francuskim carem?",
+      "answer" : "Napoleon III."
+    }, {
+      "question" : "Koja je najduža od četiriju karlovačkih rijeka?",
+      "answer" : "Kupa"
+    }, {
+      "question" : "Koji nosač zvuka ima oznake brzine 33⅓ ili 45 okretaja u minuti?",
+      "answer" : "Gramofonska ploča"
+    }, {
+      "question" : "Koliko grba ima vrsta deve koju zovemo dromedar?",
+      "answer" : "Jednu"
+    }, {
+      "question" : "U kojoj se državi odvija radnja filma “Milijunaš s ulice”?",
+      "answer" : "Indiji"
+    }, {
+      "question" : "Po kojem je biću iz skandinavske mitologije nazvana osoba koja gnjavi internetske korisnike?",
+      "answer" : "Trolu"
+    }, {
+      "question" : "Koji bezbojni plin bez okusa i mirisa ima najmanju gustoću?",
+      "answer" : "Helij"
+    }, {
+      "question" : "Kako se zove umjetnik koji osmišljava plesne pokrete pri postavljanju baleta?",
+      "answer" : "Koreograf"
+    }, {
+      "question" : "Koji je četverokut nazvan prema četvrtom slovu grčkog alfabeta?",
+      "answer" : "Deltoid"
+    }, {
+      "question" : "Ako je nešto ovoidno, znači da je u obliku čega?",
+      "answer" : "Jajeta"
+    }, {
+      "question" : "Kojem fiktivnom gusaru pomaže i odmaže debeljuškasti Smee?",
+      "answer" : "Kapetanu Kuki"
+    }, {
+      "question" : "Koji se naziv za štapićaste bakterije krije iza slova B u kratici cjepiva BCG?",
+      "answer" : "Bacili"
+    }, {
+      "question" : "Među kojim su narodom bile raširene vjerske sljedbe farizeja, saduceja i esena?",
+      "answer" : "Židovima"
+    }, {
+      "question" : "Kako zovemo Amanitu muscariu, gljivu crvenog klobuka s bijelim točkicama?",
+      "answer" : "Muhara"
+    }, {
+      "question" : "Na čelu kojeg ratobornog ženskog plemena bila je Aresova kći Penthesileja?",
+      "answer" : "Amazonki"
+    }, {
+      "question" : "Koliko slova u kratici BENELUX označava Nizozemsku?",
+      "answer" : "Dva"
+    }, {
+      "question" : "Na što žure likovi na početku filma “Četiri vjenčanja i sprovod”?",
+      "answer" : "Na vjenčanje"
+    }, {
+      "question" : "Slovo A u kratici MASH označava vojsku. Što označava slovo H?",
+      "answer" : "Bolnicu"
+    }, {
+      "question" : "Kojem su začinskom namazu osnova aromatične sjemenke biljke gorušice?",
+      "answer" : "Senfu"
+    }, {
+      "question" : "Pepeo kojeg je člana Beatlesa posut u rijeku Ganges?",
+      "answer" : "Georgea Harrisona"
+    }, {
+      "question" : "Na kojoj su velikoj rijeci Vientiane i Phnom Penh, najveći gradovi Laosa i Kambodže?",
+      "answer" : "Mekongu"
+    }, {
+      "question" : "Koja se grana matematike bavi prikupljanjem i analizom brojčanih podataka?",
+      "answer" : "Statistika"
+    }, {
+      "question" : "Koji je crtano-filmski kabelski kanal Ted Turner pokrenuo 1992. godine?",
+      "answer" : "Cartoon Network"
+    }, {
+      "question" : "Koja se engleska riječ koristi za elektrostimulator srca?",
+      "answer" : "Pacemaker"
+    }, {
+      "question" : "Časnici čije su vojske stradali 1940. u pokolju u Katinskoj šumi?",
+      "answer" : "Poljske"
+    }, {
+      "question" : "Što je po zanimanju demonski Sweeney Todd u filmskom mjuziklu Tima Burtona?",
+      "answer" : "Brijač"
+    }, {
+      "question" : "U kojem gradu živi i djeluje stripovski junak Dylan Dog?",
+      "answer" : "Londonu"
+    }, {
+      "question" : "Koji je irski pjevač dobio nadimak “Mr. Eurovision” nakon dvije pobjede na Eurosongu?",
+      "answer" : "Johnny Logan"
+    }, {
+      "question" : "U kojoj se disciplini alpskog skijanja u pravilu postižu najveće brzine?",
+      "answer" : "Spustu"
+    }, {
+      "question" : "Kojim napuhanim izrazom opisujemo tržište na kojem cijene imovine nerealno rastu?",
+      "answer" : "Balon"
+    }, {
+      "question" : "Britanski admiral Thomas Cochrane sudjelovao je u ratu za neovisnost koje države od Portugala?",
+      "answer" : "Brazila"
+    }, {
+      "question" : "Koji je mitski graditelj za sebe i sina Ikara napravio krila od perja i voska?",
+      "answer" : "Dedal"
+    }, {
+      "question" : "Koji je po redu izbor na NBA draftu 1984. bio Michael Jordan?",
+      "answer" : "Treći"
+    }, {
+      "question" : "Kojom se francuskom riječju nazivaju radionice u kojima umjetnik stvara svoja djela?",
+      "answer" : "Atelier"
+    }, {
+      "question" : "Bilježnice koje dvostruke nobelovke čuvaju se u olovnim kutijama?",
+      "answer" : "Marie Curie"
+    }, {
+      "question" : "Koji je napadač preuzeo Realovu “desetku” nakon Modrićeva odlaska?",
+      "answer" : "Kylian Mbappé"
+    }, {
+      "question" : "Koja se zemlja na Al-Idrisijevoj karti iz 1154. spominje pod imenom Bilad Garuasija?",
+      "answer" : "Hrvatska"
+    }, {
+      "question" : "Hrvatska s Italijom nema kopnenu, već kakvu granicu?",
+      "answer" : "Morsku"
+    }, {
+      "question" : "Koji je ministar unutarnjih poslova bio jedan od kreatora neoapsolutizma u Habsburškoj Monarhiji?",
+      "answer" : "Alexander von Bach"
+    }, {
+      "question" : "Koji je svetac prema legendi propovijedao ribama kad ga ljudi nisu htjeli slušati?",
+      "answer" : "Sveti Antun"
+    }, {
+      "question" : "Koji je grad središte zbivanja “Danuncijade” Viktora Cara Emina?",
+      "answer" : "Rijeka"
+    }, {
+      "question" : "Od koga je Belizar preoteo Kartagu osamdesetak godina nakon njihove pljačke Rima?",
+      "answer" : "Vandala"
+    }, {
+      "question" : "U kojem je gradu 8. veljače 1984. pao snijeg i skupio se čitav svijet?",
+      "answer" : "Sarajevu"
+    }, {
+      "question" : "Dio obale koje otočne države je uz Meksički zaljev?",
+      "answer" : "Kube"
+    }, {
+      "question" : "Koji je glumac režirao nastavak “Kineske četvrti”?",
+      "answer" : "Jack Nicholson"
+    }, {
+      "question" : "Koji je njemački filozof krilaticu “Usudi se znati” smatrao motom prosvjetiteljstva?",
+      "answer" : "Immanuel Kant"
+    } ],
+    "count" : 65
+  },
+  "multipleChoiceQuestions" : {
+    "items" : [ {
+      "question" : "Na kojoj rijeci leži grad Little Rock?",
+      "correctAnswer" : "a) Arkansas",
+      "answers" : [ "a) Arkansas", "b) Colorado", "c) Potomac" ]
+    }, {
+      "question" : "U kojem filmu Nicolas Cage glumi osamljenog tartufara?",
+      "correctAnswer" : "c) svinja",
+      "answers" : [ "a) medvjed", "b) slon", "c) svinja" ]
+    }, {
+      "question" : "Po kojem je dragom kamenu Yukihiro Matsumoto nazvao programski jezik koji je razvio sredinom 90-ih?",
+      "correctAnswer" : "b) rubinu",
+      "answers" : [ "a) ametistu", "b) rubinu", "c) smaragdu" ]
+    }, {
+      "question" : "Koji oblik ima zrcalo kod kojeg se zrake svjetlosti paralelne s osi simetrije odbijaju kroz žarište?",
+      "correctAnswer" : "c) paraboloida",
+      "answers" : [ "a) elipsoida", "b) hiperboloida", "c) paraboloida" ]
+    }, {
+      "question" : "Dante Alighieri u Božanstvenoj komediji spominje Hrvata u liku...?",
+      "correctAnswer" : "a) ganutog hodočasnika",
+      "answers" : [ "a) ganutog hodočasnika", "b) plemenitog vojnika", "c) raspojasnog gusara" ]
+    }, {
+      "question" : "Aleksandar Veliki je izgradio nasip kako bi osvojio koji utvrđeni otočni grad?",
+      "correctAnswer" : "c) Tir",
+      "answers" : [ "a) Isu", "b) Tebu", "c) Tir" ]
+    }, {
+      "question" : "Koji je detalj obilježio videospot \"Billie Jean\" Michaela Jacksona?",
+      "correctAnswer" : "c) svjetleći pločnik",
+      "answers" : [ "a) leteći pjevač", "b) prijeteći vukodlak", "c) svjetleći pločnik" ]
+    }, {
+      "question" : "Današnje Sredozemno more smatra se ostatkom kojeg praoceana?",
+      "correctAnswer" : "b) Tetisa",
+      "answers" : [ "a) Testisa", "b) Tetisa", "c) Tetrisa" ]
+    }, {
+      "question" : "Koji je premijer bio na pogrebu Franje Tuđmana?",
+      "correctAnswer" : "c) Viktor Orbán",
+      "answers" : [ "a) Robert Fico", "b) Robert Golob", "c) Viktor Orbán" ]
+    }, {
+      "question" : "Koji je jedini u cijelosti sačuvan roman starorimske književnosti?",
+      "correctAnswer" : "b) Zlatni magarac",
+      "answers" : [ "a) Zlatna ribica", "b) Zlatni magarac", "c) Zlatno tele" ]
+    }, {
+      "question" : "Tom Brady smatra se najboljim igračem koji je igrao na poziciji...?",
+      "correctAnswer" : "b) quarterbacka",
+      "answers" : [ "a) point guarda", "b) quarterbacka", "c) strikera" ]
+    }, {
+      "question" : "U operaciji Orkan 1991. oslobođen je najveći dio:",
+      "correctAnswer" : "c) zapadne Slavonije",
+      "answers" : [ "a) istočne Like", "b) Ravnih kotara", "c) zapadne Slavonije" ]
+    }, {
+      "question" : "Osobna imena u kojem su stripovskom svijetu često nastala aliteracijom, jer ih je zaboravni Stan Lee tako lakše pamtio?",
+      "correctAnswer" : "c) u Marvelovu",
+      "answers" : [ "a) u Bonellijevu", "b) u DC-jevu", "c) u Marvelovu" ]
+    }, {
+      "question" : "“Trebao sam biti tvoj Adam, no ja sam više pali anđeo” citat je iz romana?",
+      "correctAnswer" : "c) Frankenstein",
+      "answers" : [ "a) Drakula", "b) Fantom iz opere", "c) Frankenstein" ]
+    }, {
+      "question" : "Koja je grčka božica u likovnim prikazima obično u lovu?",
+      "correctAnswer" : "b) Artemida",
+      "answers" : [ "a) Afrodita", "b) Artemida", "c) Atena" ]
+    }, {
+      "question" : "Kako se zove stadion nogometnog kluba Marsonia?",
+      "correctAnswer" : "c) Stadion uz Savu",
+      "answers" : [ "a) Stadion uz Dravu", "b) Stadion uz Dunav", "c) Stadion uz Savu" ]
+    }, {
+      "question" : "Baba Jaga živi u kolibi koja se kreće:",
+      "correctAnswer" : "a) na kokošjim nogama",
+      "answers" : [ "a) na kokošjim nogama", "b) na kozjim nogama", "c) na mačjim nogama" ]
+    }, {
+      "question" : "Koji je efekt Christophorus Buys-Ballot eksperimentalno dokazao slušajući trubače koji su svirali isti ton u vlaku u pokretu?",
+      "correctAnswer" : "c) Dopplerov",
+      "answers" : [ "a) Comptonov", "b) Coriolisov", "c) Dopplerov" ]
+    }, {
+      "question" : "Iz ugarske kronike Šimuna de Keze iz 13. stoljeća potječe jedini pouzdan spomen kojeg hrvatskog vladara?",
+      "correctAnswer" : "b) Petra Svačića",
+      "answers" : [ "a) Petra Krešimira IV.", "b) Petra Svačića", "c) Stjepana Držislava" ]
+    }, {
+      "question" : "Koji superheroj uspije podići Thorov malj u filmu \"Osvetnici: Završnica\"?",
+      "correctAnswer" : "c) Kapetan Amerika",
+      "answers" : [ "a) Hawkeye", "b) Iron Man", "c) Kapetan Amerika" ]
+    }, {
+      "question" : "U kojem je sportu teren dug 40, a širok 20 metara?",
+      "correctAnswer" : "c) rukomet",
+      "answers" : [ "a) košarka", "b) odbojka", "c) rukomet" ]
+    }, {
+      "question" : "Kako se zove medvjed iz naslova najpopularnijeg slovenskog animiranog filma?",
+      "correctAnswer" : "a) Bojan",
+      "answers" : [ "a) Bojan", "b) Borut", "c) Janez" ]
+    }, {
+      "question" : "Pjesma Elektra koje je žene za sva vremena svirala 2017. na zatvaranju Chanelove revije na Tjednu mode u Parizu?",
+      "correctAnswer" : "c) Zdenke Kovačiček",
+      "answers" : [ "a) Josipe Lisac", "b) Tereze Kesovije", "c) Zdenke Kovačiček" ]
+    }, {
+      "question" : "Koji je najprodavaniji roman u povijesti australske književnosti?",
+      "correctAnswer" : "b) Ptice umiru pjevajući",
+      "answers" : [ "a) Orkanski visovi", "b) Ptice umiru pjevajući", "c) Zameo ih vjetar" ]
+    }, {
+      "question" : "U kojem filmu Woodyja Allena lik iz filma siđe s platna u stvarni svijet?",
+      "correctAnswer" : "c) Purpurna ruža Kaira",
+      "answers" : [ "a) Annie Hall", "b) Manhattan", "c) Purpurna ruža Kaira" ]
+    } ],
+    "count" : 25
+  }
+}

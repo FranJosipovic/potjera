@@ -3,12 +3,9 @@ package com.fran.dev.potjerawebscraper.models;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
-import java.util.List;
-
 @Data
 @AllArgsConstructor
-public class MultipleChoiceQuestion {
+public class QuickFireQuestionWeb {
     String question;
-    String correctAnswer;
-    List<String> answers;
+    String answer;
 }
