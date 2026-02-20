@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: ServerBackend
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/potjera
+    username: potjera
+    password: potjera
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+
+app:
+  jwt:
+    secret: mySuperSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm!
+    expiration-ms: 86400000
+
+logging:
+  level:
+    org.springframework.security: DEBUG
