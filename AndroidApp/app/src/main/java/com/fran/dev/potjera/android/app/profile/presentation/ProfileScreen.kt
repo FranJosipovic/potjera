@@ -1,5 +1,6 @@
 package com.fran.dev.potjera.android.app.profile.presentation
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +28,10 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -43,6 +47,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fran.dev.potjera.android.app.domain.models.user.User
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -84,7 +89,11 @@ private val GradAchievementLocked = Brush.linearGradient(
 fun ProfileScreen(
     user: User,
     onBack: () -> Unit = {},
+    onLogout: () -> Unit = {},  // ← add this
 ) {
+
+    val profileViewModel = hiltViewModel<ProfileViewModel>()
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -119,10 +128,41 @@ fun ProfileScreen(
             // Achievements section
             AchievementsSection()
 
+            // logout
+            Button(
+                onClick = {
+                    profileViewModel.logout {
+                        onLogout()
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF2A1848)
+                ),
+                border = BorderStroke(1.dp, Color(0xFFE74C3C))
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Warning,
+                    contentDescription = null,
+                    tint = Color(0xFFE74C3C),
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Logout",
+                    color = Color(0xFFE74C3C),
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
             Spacer(modifier = Modifier.height(8.dp))
         }
+
+
+        Spacer(modifier = Modifier.height(8.dp))
     }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Top bar

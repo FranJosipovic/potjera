@@ -17,6 +17,7 @@ app:
   jwt:
     secret: mySuperSecretKeyThatIsAtLeast256BitsLongForHS256Algorithm!
     expiration-ms: 86400000
+    refreshExpirationMs: 2592000000
 
 logging:
   level:

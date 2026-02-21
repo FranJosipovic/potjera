@@ -1,5 +1,6 @@
 package com.fran.dev.potjera.serverbackend.services;
 
+import com.fran.dev.potjera.potjeradb.models.RefreshToken;
 import com.fran.dev.potjera.serverbackend.models.user.AuthResponse;
 import com.fran.dev.potjera.serverbackend.models.user.LoginRequest;
 import com.fran.dev.potjera.serverbackend.models.user.SignupRequest;
@@ -20,6 +21,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthResponse signup(SignupRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -31,8 +33,6 @@ public class AuthService {
 
         User user = User.builder()
                 .username(request.getUsername())
-                .name(request.getName())
-                .surname(request.getSurname())
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword())) // BCrypt hash
                 .build();
@@ -40,7 +40,8 @@ public class AuthService {
         userRepository.save(user);
 
         String token = jwtUtil.generateToken(user.getEmail());
-        return new AuthResponse(token, user.getUsername(), user.getEmail());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+        return new AuthResponse(token, refreshToken.getToken(), user.getUsername(), user.getEmail());
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -53,6 +54,7 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String token = jwtUtil.generateToken(user.getEmail());
-        return new AuthResponse(token, user.getUsername(), user.getEmail());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
+        return new AuthResponse(token, refreshToken.getToken(), user.getUsername(), user.getEmail());
     }
 }
