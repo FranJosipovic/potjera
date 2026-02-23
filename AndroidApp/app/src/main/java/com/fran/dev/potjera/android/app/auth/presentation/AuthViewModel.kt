@@ -41,6 +41,7 @@ class AuthViewModel @Inject constructor(
 
                 if (response.data != null) {
                     val user = User(
+                        id = response.data.userId,
                         username = response.data.username,
                         imageUrl = null,
                         coins = 0,
@@ -71,6 +72,7 @@ class AuthViewModel @Inject constructor(
 
                 if (response.data != null) {
                     val user = User(
+                        id = response.data.userId,
                         username = response.data.username,
                         imageUrl = null,
                         coins = 0,

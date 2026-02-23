@@ -1,6 +1,7 @@
 package com.fran.dev.potjera.android.app.domain.models.user
 
 data class User(
+    val id: Long,
     val username: String,
     val imageUrl: String?,
     val coins: Int,

@@ -1,5 +1,6 @@
 package com.fran.dev.potjera.android.app.auth.api
 
+import retrofit2.Call
 import okhttp3.ResponseBody
 import retrofit2.http.Body
 import retrofit2.http.POST
@@ -26,6 +27,10 @@ interface AuthApi {
         @Body request: RefreshRequest
     ): RefreshResponse
 
+    // ✅ ADD THIS (blocking version)
+    @POST("auth/refresh")
+    fun refreshBlocking(@Body request: RefreshRequest): Call<RefreshResponse>
+
     @POST("auth/check-status")
     suspend fun checkStatus(
         @Body request: CheckStatusRequest
@@ -44,6 +49,7 @@ data class SignInRequest(
 )
 
 data class SignInResponse(
+    val userId: Long,
     val token: String,
     val refreshToken: String,
     val username: String,
@@ -51,6 +57,7 @@ data class SignInResponse(
 )
 
 data class SignUpResponse(
+    val userId: Long,
     val token: String,
     val refreshToken: String,
     val username: String,

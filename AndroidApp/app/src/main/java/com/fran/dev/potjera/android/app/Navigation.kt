@@ -1,5 +1,6 @@
 package com.fran.dev.potjera.android.app
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -8,9 +9,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.fran.dev.potjera.android.app.auth.presentation.AuthScreen
 import com.fran.dev.potjera.android.app.home.presentation.HomeScreen
 import com.fran.dev.potjera.android.app.profile.presentation.ProfileScreen
+import com.fran.dev.potjera.android.app.room.presentation.create.CreateRoomScreen
+import com.fran.dev.potjera.android.app.room.presentation.join.JoinRoomScreen
+import com.fran.dev.potjera.android.app.room.presentation.lobby.RoomLobbyScreen
 import com.fran.dev.potjera.android.app.ui.LoadingScreen
 import kotlinx.serialization.Serializable
 
@@ -20,8 +25,19 @@ object Home
 @Serializable
 object Profile
 
+@Serializable
+object CreateRoom
+
+@Serializable
+object JoinRoom
+
+@Serializable
+data class Lobby(val roomId: String)
 @Composable
 fun Navigation(modifier: Modifier) {
+
+    val TAG = "Navigation"
+
     val navController = rememberNavController()
     val mainViewModel: MainViewModel = hiltViewModel()
     val user by mainViewModel.user.collectAsStateWithLifecycle()
@@ -39,6 +55,10 @@ fun Navigation(modifier: Modifier) {
             composable<Home> {
                 HomeScreen(modifier = modifier, user = user!!, onProfile = {
                     navController.navigate(Profile)
+                }, onCreateRoom = {
+                    navController.navigate(CreateRoom)
+                }, onJoinRoom = {
+                    navController.navigate(JoinRoom)
                 })
             }
             composable<Profile> {
@@ -47,6 +67,40 @@ fun Navigation(modifier: Modifier) {
                 }, onLogout = {
                     mainViewModel.setUser(null)
                 })
+            }
+            composable<CreateRoom> {
+                CreateRoomScreen(
+                    user = user!!,
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onCreateRoom = { roomId ->
+                        //TODO: navigate to lobby
+                        Log.d(TAG, "Navigation: Room Created")
+                        navController.navigate(Lobby(roomId))
+                    }
+                )
+            }
+            composable<JoinRoom> {
+                JoinRoomScreen(
+                    publicRooms = emptyList(),
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                )
+            }
+            composable<Lobby> {backStackEntry ->
+                val lobby: Lobby = backStackEntry.toRoute()
+                RoomLobbyScreen(
+                    userId = user!!.id,
+                    roomCode = lobby.roomId,
+                    onBack = {
+                        navController.popBackStack()
+                    },
+                    onStartGame = {
+                        Log.d(TAG, "Navigation: Game Started")
+                    }
+                )
             }
         }
     }

@@ -1,8 +1,10 @@
 package com.fran.dev.potjera.serverbackend.services;
 
 import com.fran.dev.potjera.potjeradb.models.RefreshToken;
+import com.fran.dev.potjera.potjeradb.models.User;
 import com.fran.dev.potjera.potjeradb.repositories.RefreshTokenRepository;
 import com.fran.dev.potjera.potjeradb.repositories.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -22,12 +24,19 @@ public class RefreshTokenService {
         this.userRepository = userRepo;
     }
 
-    public RefreshToken createRefreshToken(Long userId) {
-        var token = new RefreshToken();
-        token.setUser(userRepository.findById(userId).get());
-        token.setExpiryDate(Instant.now().plusMillis(refreshTokenDurationMs));
-        token.setToken(UUID.randomUUID().toString());
-        return refreshTokenRepository.save(token);
+    @Transactional
+    public RefreshToken createRefreshToken(User user) {
+        // force delete + flush before insert
+        refreshTokenRepository.deleteByUser(user);
+        refreshTokenRepository.flush();
+
+        RefreshToken refreshToken = RefreshToken.builder()
+                .user(user)
+                .token(UUID.randomUUID().toString())
+                .expiryDate(Instant.now().plusSeconds(60 * 60 * 24 * 7))
+                .build();
+
+        return refreshTokenRepository.save(refreshToken);
     }
 
     public boolean isTokenExpired(RefreshToken token) {

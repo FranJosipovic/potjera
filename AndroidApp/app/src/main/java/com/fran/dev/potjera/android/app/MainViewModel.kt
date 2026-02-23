@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.fran.dev.potjera.android.app.auth.repository.AuthRepository
 import com.fran.dev.potjera.android.app.auth.repository.CheckStatusResult
 import com.fran.dev.potjera.android.app.domain.models.user.User
+import com.fran.dev.potjera.android.app.user.repository.MeResult
+import com.fran.dev.potjera.android.app.user.repository.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +19,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val authRepository: AuthRepository,
-    private val prefs: SharedPreferences
+    private val prefs: SharedPreferences,
+    private val userRepository: UserRepository
 ) : ViewModel() {
     companion object {
         const val TAG = "MainViewModel"
@@ -43,16 +46,29 @@ class MainViewModel @Inject constructor(
                 when (result) {
                     is CheckStatusResult.Authorized<*> -> {
                         Log.d(TAG, "init: user is authorized")
-                        //TODO: Load User Info
-                        _user.value = User(
-                            username = "Player_123",
-                            imageUrl = null,
-                            coins = 12_250,
-                            rank = 47,
-                            xp = 2450,
-                            gamesPlayed = 38,
-                            gamesWon = 24
-                        )
+
+                        when (val meResult = userRepository.me()) {
+                            is MeResult.Success<*> -> {
+                                //TODO: Load User Info
+                                _user.value = User(
+                                    id = meResult.data!!.id,
+                                    username = meResult.data.username,
+                                    imageUrl = null,
+                                    coins = 12_250,
+                                    rank = 47,
+                                    xp = 2450,
+                                    gamesPlayed = 38,
+                                    gamesWon = 24
+                                )
+                            }
+
+                            is MeResult.Error<*> -> {
+                                Log.d(TAG, "init: Error while loading user info")
+                                _user.value = null
+                            }
+                        }
+
+
                     }
 
                     is CheckStatusResult.Unauthorized<*> -> {

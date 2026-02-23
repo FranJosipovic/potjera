@@ -40,8 +40,8 @@ public class AuthService {
         userRepository.save(user);
 
         String token = jwtUtil.generateToken(user.getEmail());
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
-        return new AuthResponse(token, refreshToken.getToken(), user.getUsername(), user.getEmail());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+        return new AuthResponse(token, refreshToken.getToken(), user.getUsername(), user.getEmail(), user.getId());
     }
 
     public AuthResponse login(LoginRequest request) {
@@ -54,7 +54,7 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         String token = jwtUtil.generateToken(user.getEmail());
-        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
-        return new AuthResponse(token, refreshToken.getToken(), user.getUsername(), user.getEmail());
+        RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
+        return new AuthResponse(token, refreshToken.getToken(), user.getUsername(), user.getEmail(), user.getId());
     }
 }
