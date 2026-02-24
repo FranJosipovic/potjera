@@ -22,7 +22,9 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bolt
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -43,6 +45,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.fran.dev.potjera.android.app.room.api.RoomDetailsResponse
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Colors
@@ -84,11 +89,17 @@ data class PublicRoom(
 
 @Composable
 fun JoinRoomScreen(
-    publicRooms: List<PublicRoom>,
     onBack: () -> Unit = {},
-    onJoinById: (roomId: String) -> Unit = {},
-    onJoinByCode: (code: String) -> Unit = {},
+    onNavigateToLobby: (roomId: String) -> Unit = {},
 ) {
+
+    val viewModel: JoinRoomViewModel = hiltViewModel()
+
+    val publicRooms by viewModel.publicRooms.collectAsStateWithLifecycle()
+    val searchResult by viewModel.searchResult.collectAsStateWithLifecycle()
+    val isLoadingRooms by viewModel.isLoadingRooms.collectAsStateWithLifecycle()
+    val isSearching by viewModel.isSearching.collectAsStateWithLifecycle()
+    val error by viewModel.error.collectAsStateWithLifecycle()
     var roomCode by remember { mutableStateOf("") }
 
     Box(
@@ -96,49 +107,112 @@ fun JoinRoomScreen(
             .fillMaxSize()
             .background(BgDeep)
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // Fixed top section
+        Column(modifier = Modifier.fillMaxSize()) {
+
             Column(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Top bar
                 JoinRoomTopBar(onBack = onBack)
 
-                // Code input
                 RoomCodeInput(
                     code = roomCode,
-                    onChange = { roomCode = it.uppercase() },
-                    onSearch = { if (roomCode.length == 6) onJoinByCode(roomCode) }
+                    onChange = {
+                        roomCode = it.uppercase()
+                        viewModel.clearSearch()
+                    },
+                    onSearch = { viewModel.searchByCode(roomCode) },
+                    isLoading = isSearching
                 )
 
-                // Section title
-                Text(
-                    text = "Available Rooms",
-                    color = White,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                // search result
+                searchResult?.let { room ->
+                    SearchResultCard(
+                        room = room,
+                        onJoin = {
+                            viewModel.joinPrivateRoom(roomCode) {
+                                onNavigateToLobby(it)
+                            }
+                        }
+                    )
+                }
+
+                // error snackbar
+                error?.let {
+                    ErrorBanner(message = it.message())
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        "Available Rooms",
+                        color = White,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    IconButton(onClick = { viewModel.loadPublicRooms() }) {
+                        Icon(Icons.Filled.Refresh, contentDescription = "Refresh", tint = TextMuted)
+                    }
+                }
             }
 
-            // Scrollable room list
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                items(publicRooms) { room ->
-                    PublicRoomCard(
-                        room = room,
-                        onJoin = { onJoinById(room.id) }
-                    )
+            // rooms list
+            if (isLoadingRooms) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Purple)
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    if (publicRooms.isEmpty()) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 40.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    "No public rooms available",
+                                    color = TextMuted,
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    } else {
+                        items(publicRooms) { room ->
+                            PublicRoomCard(
+                                room = room.toPublicRoom(),
+                                onJoin = {
+                                    viewModel.joinPublicRoom(room.id) {
+                                        onNavigateToLobby(it)
+                                    }
+                                }  // ← public join by id
+                            )
+                        }
+                    }
                 }
             }
         }
     }
 }
+
+// map RoomDetailsResponse → PublicRoom for the card
+private fun RoomDetailsResponse.toPublicRoom() = PublicRoom(
+    id = id,
+    name = "${players.find { it.isHost }?.username ?: "Unknown"}'s Room",
+    hostUsername = players.find { it.isHost }?.username ?: "Unknown",
+    currentPlayers = currentPlayers,
+    maxPlayers = maxPlayers,
+    entryFee = 0,       // add entryFee to RoomDetailsResponse if needed
+    isOpen = status == "WAITING" && currentPlayers < maxPlayers
+)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Top bar
@@ -177,6 +251,7 @@ private fun RoomCodeInput(
     code: String,
     onChange: (String) -> Unit,
     onSearch: () -> Unit,
+    isLoading: Boolean = false,  // ← add this
 ) {
     Column(
         modifier = Modifier
@@ -194,7 +269,6 @@ private fun RoomCodeInput(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Text field
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -225,25 +299,34 @@ private fun RoomCodeInput(
                 )
             }
 
-            // Search button
+            // Search button — shows spinner when loading
             Box(
                 modifier = Modifier
                     .size(46.dp)
                     .clip(RoundedCornerShape(10.dp))
                     .background(GradSearch)
                     .clickable(
+                        enabled = !isLoading,
                         indication = null,
                         interactionSource = remember { MutableInteractionSource() },
                         onClick = onSearch
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Search,
-                    contentDescription = "Search",
-                    tint = White,
-                    modifier = Modifier.size(22.dp)
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        color = White,
+                        strokeWidth = 2.dp,
+                        modifier = Modifier.size(20.dp)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Search,
+                        contentDescription = "Search",
+                        tint = White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
         }
     }
@@ -377,6 +460,60 @@ private fun PublicRoomCard(room: PublicRoom, onJoin: () -> Unit) {
     }
 }
 
+@Composable
+private fun SearchResultCard(room: RoomDetailsResponse, onJoin: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(BgCard)
+            .border(1.dp, Purple.copy(alpha = 0.5f), RoundedCornerShape(14.dp))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Text("Room Found", color = Purple, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text(
+            text = "${room.players.find { it.isHost }?.username}'s Room",
+            color = White,
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text("👥 ", fontSize = 13.sp)
+            Text("${room.currentPlayers}/${room.maxPlayers}", color = TextMuted, fontSize = 13.sp)
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(GradJoinBtn)
+                .clickable(
+                    indication = null,
+                    interactionSource = remember { MutableInteractionSource() },
+                    onClick = onJoin
+                )
+                .padding(vertical = 12.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("Join Room", color = White, fontSize = 15.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+private fun ErrorBanner(message: String) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color.Red.copy(alpha = 0.15f))
+            .border(1.dp, Color.Red.copy(alpha = 0.4f), RoundedCornerShape(10.dp))
+            .padding(horizontal = 14.dp, vertical = 10.dp)
+    ) {
+        Text(message, color = Color.Red, fontSize = 13.sp)
+    }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Preview
 // ─────────────────────────────────────────────────────────────────────────────
@@ -384,11 +521,11 @@ private fun PublicRoomCard(room: PublicRoom, onJoin: () -> Unit) {
 @Preview(showBackground = true, backgroundColor = 0xFF1A1035, widthDp = 360, heightDp = 780)
 @Composable
 fun JoinRoomScreenPreview() {
-    val rooms = listOf(
+    listOf(
         PublicRoom("1", "Quick Game", "Player_456", 2, 4, 100, true),
         PublicRoom("2", "High Stakes Challenge", "ProGamer99", 3, 4, 1000, true),
         PublicRoom("3", "Beginner Friendly", "Newbie_12", 1, 4, 100, true),
         PublicRoom("4", "Champions Only", "Legend_99", 4, 4, 500, false),
     )
-    JoinRoomScreen(publicRooms = rooms)
+    JoinRoomScreen()
 }

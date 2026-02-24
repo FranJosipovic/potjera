@@ -33,6 +33,7 @@ object JoinRoom
 
 @Serializable
 data class Lobby(val roomId: String)
+
 @Composable
 fun Navigation(modifier: Modifier) {
 
@@ -83,17 +84,18 @@ fun Navigation(modifier: Modifier) {
             }
             composable<JoinRoom> {
                 JoinRoomScreen(
-                    publicRooms = emptyList(),
                     onBack = {
                         navController.popBackStack()
                     },
+                    onNavigateToLobby = { roomId ->
+                        navController.navigate(Lobby(roomId))
+                    }
                 )
             }
-            composable<Lobby> {backStackEntry ->
+            composable<Lobby> { backStackEntry ->
                 val lobby: Lobby = backStackEntry.toRoute()
                 RoomLobbyScreen(
-                    userId = user!!.id,
-                    roomCode = lobby.roomId,
+                    roomId = lobby.roomId,
                     onBack = {
                         navController.popBackStack()
                     },

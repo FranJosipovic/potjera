@@ -3,16 +3,16 @@ package com.fran.dev.potjera.serverbackend.controllers;
 import com.fran.dev.potjera.potjeradb.models.User;
 import com.fran.dev.potjera.serverbackend.models.room.CreateRoomRequest;
 import com.fran.dev.potjera.serverbackend.models.room.CreateRoomResponse;
+import com.fran.dev.potjera.serverbackend.models.room.RoomDetailsResponse;
 import com.fran.dev.potjera.serverbackend.services.RoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/rooms")
@@ -29,5 +29,39 @@ public class RoomController {
         User user = (User) userDetails;
         CreateRoomResponse response = roomService.createRoom(user.getId(), request.isPrivate());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @PostMapping("/join/public/{roomId}")
+    public ResponseEntity<CreateRoomResponse> joinPublicRoom(
+            @PathVariable String roomId,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(roomService.joinPublicRoom(roomId, user));
+    }
+
+    @PostMapping("/join/private/{code}")
+    public ResponseEntity<CreateRoomResponse> joinPrivateRoom(
+            @PathVariable String code,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(roomService.joinPrivateRoom(code, user));
+    }
+
+    @GetMapping("/{roomId}")
+    public ResponseEntity<RoomDetailsResponse> getRoom(
+            @PathVariable String roomId,
+            @AuthenticationPrincipal User user
+    ) {
+        return ResponseEntity.ok(roomService.getRoomDetails(roomId));
+    }
+
+    @GetMapping("/public")
+    public ResponseEntity<List<RoomDetailsResponse>> getPublicRooms() {
+        return ResponseEntity.ok(roomService.getPublicRooms());
+    }
+
+    @GetMapping("/code/{code}")
+    public ResponseEntity<RoomDetailsResponse> getRoomByCode(@PathVariable String code) {
+        return ResponseEntity.ok(roomService.getRoomByCode(code));
     }
 }

@@ -24,10 +24,12 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -42,6 +44,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.fran.dev.potjera.android.app.room.api.RoomPlayerDTO
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Colors
@@ -88,8 +91,7 @@ data class LobbyHunter(
 
 @Composable
 fun RoomLobbyScreen(
-    userId: Long,
-    roomCode: String,
+    roomId: String,
     onBack: () -> Unit = {},
     onStartGame: () -> Unit = {},
 ) {
@@ -100,78 +102,95 @@ fun RoomLobbyScreen(
     val isHost = true
 
     val roomLobbyViewModel = hiltViewModel<RoomLobbyViewModel>()
+
+    val roomDetails by roomLobbyViewModel.roomDetails.collectAsState()
     val players by roomLobbyViewModel.players.collectAsState()
     val hunter by roomLobbyViewModel.hunter.collectAsState()
+    val isLoading by roomLobbyViewModel.isLoading.collectAsState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(BgDeep)
-    ) {
-        Column(
+    LaunchedEffect(roomId) {
+        roomLobbyViewModel.initRoom(roomId)
+    }
+
+    if (isLoading) {
+        CircularProgressIndicator(
+            color = Color.White,
+            strokeWidth = 2.dp,
+            modifier = Modifier.size(22.dp)
+        )
+    } else if (roomDetails != null) {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .background(BgDeep)
         ) {
-            // Top bar
-            LobbyTopBar(onBack = onBack)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Top bar
+                LobbyTopBar(onBack = onBack)
 
-            // Room code card (only for private rooms)
-            RoomCodeCard(code = roomCode, onCopy = {})
+                // Room code card (only for private rooms)
+                RoomCodeCard(code = roomDetails!!.code ?: "-")
 
-            // Players section
-            PlayersSection(
-                players = players,
-                maxPlayers = maxPlayers
-            )
-
-            // Hunter section
-            HunterSection(hunter = hunter)
-
-            // Prize pool + entry fee card
-            PrizePoolCard(
-                prizePool = prizePool,
-                entryFee = entryFee
-            )
-
-            // Start Game button (host only)
-            if (isHost) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(GradButton)
-                        .padding(vertical = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Button(
-                        onClick = onStartGame,
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                        contentPadding = PaddingValues(0.dp),
-                        elevation = ButtonDefaults.buttonElevation(0.dp)
-                    ) {
-                        Text(
-                            text = "Start Game",
-                            color = White,
-                            fontSize = 17.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
-                Text(
-                    text = "All set! Click Start Game",
-                    color = TextMuted,
-                    fontSize = 11.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
+                // Players section
+                PlayersSection(
+                    players = players,
+                    maxPlayers = maxPlayers
                 )
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                // Hunter section
+                HunterSection(hunter = hunter)
+
+                // Prize pool + entry fee card
+                PrizePoolCard(
+                    prizePool = prizePool,
+                    entryFee = entryFee
+                )
+
+                // Start Game button (host only)
+                if (isHost) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(GradButton)
+                            .padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Button(
+                            onClick = onStartGame,
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
+                            contentPadding = PaddingValues(0.dp),
+                            elevation = ButtonDefaults.buttonElevation(0.dp)
+                        ) {
+                            Text(
+                                text = "Start Game",
+                                color = White,
+                                fontSize = 17.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                    Text(
+                        text = "All set! Click Start Game",
+                        color = TextMuted,
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
+    } else {
+        Text("Something went wrong")
     }
 }
 
@@ -208,7 +227,7 @@ private fun LobbyTopBar(onBack: () -> Unit) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun RoomCodeCard(code: String, onCopy: () -> Unit) {
+private fun RoomCodeCard(code: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -232,7 +251,7 @@ private fun RoomCodeCard(code: String, onCopy: () -> Unit) {
                 letterSpacing = 3.sp
             )
             IconButton(
-                onClick = onCopy,
+                onClick = { },
                 modifier = Modifier
                     .size(40.dp)
                     .clip(RoundedCornerShape(8.dp))
@@ -254,7 +273,7 @@ private fun RoomCodeCard(code: String, onCopy: () -> Unit) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun PlayersSection(players: List<LobbyPlayer>, maxPlayers: Int) {
+private fun PlayersSection(players: List<RoomPlayerDTO>, maxPlayers: Int) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         // Header
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -281,7 +300,7 @@ private fun PlayersSection(players: List<LobbyPlayer>, maxPlayers: Int) {
 }
 
 @Composable
-private fun PlayerRow(player: LobbyPlayer) {
+private fun PlayerRow(player: RoomPlayerDTO) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -298,7 +317,7 @@ private fun PlayerRow(player: LobbyPlayer) {
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(player.avatarColor),
+                    .background(Color.Blue),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -357,7 +376,7 @@ private fun PlayerRow(player: LobbyPlayer) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun HunterSection(hunter: LobbyHunter?) {
+private fun HunterSection(hunter: RoomPlayerDTO?) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         // Header
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -385,7 +404,7 @@ private fun HunterSection(hunter: LobbyHunter?) {
                     modifier = Modifier
                         .size(44.dp)
                         .clip(CircleShape)
-                        .background(hunter.avatarColor),
+                        .background(Color.Red),
                     contentAlignment = Alignment.Center
                 ) {
                     Text("😈", fontSize = 22.sp)
@@ -399,7 +418,7 @@ private fun HunterSection(hunter: LobbyHunter?) {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = hunter.rankLabel,
+                        text = hunter.rank.toString(),
                         color = TextMuted,
                         fontSize = 12.sp
                     )
@@ -465,7 +484,6 @@ private fun PrizePoolCard(prizePool: Int, entryFee: Int) {
 @Composable
 fun RoomLobbyScreenPreview() {
     RoomLobbyScreen(
-        userId = 1,
-        roomCode = "ABCD1234",
+        roomId = "room123",
     )
 }
