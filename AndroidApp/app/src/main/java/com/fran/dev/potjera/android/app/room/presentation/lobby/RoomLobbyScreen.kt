@@ -2,10 +2,11 @@ package com.fran.dev.potjera.android.app.room.presentation.lobby
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,8 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,6 +31,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,7 +39,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -93,23 +92,31 @@ data class LobbyHunter(
 fun RoomLobbyScreen(
     roomId: String,
     onBack: () -> Unit = {},
-    onStartGame: () -> Unit = {},
+    onStartGame: (gameSessionId: String) -> Unit = {},
 ) {
     val maxPlayers = 5
     val prizePool = 1000
     val entryFee = 100
 
-    val isHost = true
+    val viewModel = hiltViewModel<RoomLobbyViewModel>()
 
-    val roomLobbyViewModel = hiltViewModel<RoomLobbyViewModel>()
+    val roomDetails by viewModel.roomDetails.collectAsState()
+    val players by viewModel.players.collectAsState()
+    val hunter by viewModel.hunter.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val isHost by viewModel.isHost.collectAsState()       // ← from VM
+    val isStartingGame by viewModel.isStartingGame.collectAsState()
 
-    val roomDetails by roomLobbyViewModel.roomDetails.collectAsState()
-    val players by roomLobbyViewModel.players.collectAsState()
-    val hunter by roomLobbyViewModel.hunter.collectAsState()
-    val isLoading by roomLobbyViewModel.isLoading.collectAsState()
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is GameEvent.StartGame -> onStartGame(event.gameSessionId)
+            }
+        }
+    }
 
     LaunchedEffect(roomId) {
-        roomLobbyViewModel.initRoom(roomId)
+        viewModel.initRoom(roomId)
     }
 
     if (isLoading) {
@@ -154,21 +161,28 @@ fun RoomLobbyScreen(
 
                 // Start Game button (host only)
                 if (isHost) {
-                    Spacer(modifier = Modifier.height(4.dp))
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(14.dp))
                             .background(GradButton)
+                            .clickable(
+                                enabled = !isStartingGame,
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() }
+                            ) {
+                                viewModel.startGame(roomId)  // ← call VM
+                            }
                             .padding(vertical = 16.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Button(
-                            onClick = onStartGame,
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.Transparent),
-                            contentPadding = PaddingValues(0.dp),
-                            elevation = ButtonDefaults.buttonElevation(0.dp)
-                        ) {
+                        if (isStartingGame) {
+                            CircularProgressIndicator(
+                                color = White,
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        } else {
                             Text(
                                 text = "Start Game",
                                 color = White,
@@ -177,13 +191,6 @@ fun RoomLobbyScreen(
                             )
                         }
                     }
-                    Text(
-                        text = "All set! Click Start Game",
-                        color = TextMuted,
-                        fontSize = 11.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))

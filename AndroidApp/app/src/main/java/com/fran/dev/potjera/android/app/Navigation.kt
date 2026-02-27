@@ -11,6 +11,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.fran.dev.potjera.android.app.auth.presentation.AuthScreen
+import com.fran.dev.potjera.android.app.game.presentation.GameRoute
 import com.fran.dev.potjera.android.app.home.presentation.HomeScreen
 import com.fran.dev.potjera.android.app.profile.presentation.ProfileScreen
 import com.fran.dev.potjera.android.app.room.presentation.create.CreateRoomScreen
@@ -33,6 +34,9 @@ object JoinRoom
 
 @Serializable
 data class Lobby(val roomId: String)
+
+@Serializable
+data class Game(val gameSessionId: String)
 
 @Composable
 fun Navigation(modifier: Modifier) {
@@ -99,8 +103,19 @@ fun Navigation(modifier: Modifier) {
                     onBack = {
                         navController.popBackStack()
                     },
-                    onStartGame = {
-                        Log.d(TAG, "Navigation: Game Started")
+                    onStartGame = { gameSessionId ->
+                        navController.navigate(Game(gameSessionId))
+                    }
+                )
+            }
+            composable<Game> { backStackEntry ->
+                val game: Game = backStackEntry.toRoute()
+                GameRoute(
+                    gameSessionId  = game.gameSessionId,
+                    onNavigateHome = {
+                        navController.navigate(Home) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 )
             }

@@ -10,6 +10,8 @@ interface RoomRepository {
     suspend fun getRoomDetails(roomId: String): RoomResult<RoomDetailsResponse>
     suspend fun getPublicRooms(): RoomResult<List<RoomDetailsResponse>>
     suspend fun getRoomByCode(code: String): RoomResult<RoomDetailsResponse>
+    suspend fun startGame(roomId: String): RoomResult<Unit>
+
 }
 
 sealed class RoomResult<out T> {
@@ -18,4 +20,5 @@ sealed class RoomResult<out T> {
     class AlreadyInRoom : RoomResult<Nothing>()
     class RoomFull : RoomResult<Nothing>()
     class UnknownError : RoomResult<Nothing>()
+    class Forbidden : RoomResult<Nothing>()   // ← add this
 }

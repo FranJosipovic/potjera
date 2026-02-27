@@ -1,12 +1,12 @@
 package com.fran.dev.potjera.serverbackend.services;
 
 import com.fran.dev.potjera.potjeradb.models.RefreshToken;
+import com.fran.dev.potjera.potjeradb.models.User;
+import com.fran.dev.potjera.potjeradb.repositories.UserRepository;
 import com.fran.dev.potjera.serverbackend.models.user.AuthResponse;
 import com.fran.dev.potjera.serverbackend.models.user.LoginRequest;
 import com.fran.dev.potjera.serverbackend.models.user.SignupRequest;
 import com.fran.dev.potjera.serverbackend.utilities.JwtUtil;
-import com.fran.dev.potjera.potjeradb.models.User;
-import com.fran.dev.potjera.potjeradb.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -39,7 +39,7 @@ public class AuthService {
 
         userRepository.save(user);
 
-        String token = jwtUtil.generateToken(user.getEmail());
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail());
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
         return new AuthResponse(token, refreshToken.getToken(), user.getUsername(), user.getEmail(), user.getId());
     }
@@ -53,7 +53,7 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        String token = jwtUtil.generateToken(user.getEmail());
+        String token = jwtUtil.generateToken(user.getId(), user.getEmail());
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user);
         return new AuthResponse(token, refreshToken.getToken(), user.getUsername(), user.getEmail(), user.getId());
     }

@@ -64,4 +64,13 @@ public class RoomController {
     public ResponseEntity<RoomDetailsResponse> getRoomByCode(@PathVariable String code) {
         return ResponseEntity.ok(roomService.getRoomByCode(code));
     }
+
+    @PostMapping("/{roomId}/start")
+    public ResponseEntity<Void> startGame(
+            @PathVariable String roomId,
+            @AuthenticationPrincipal User user
+    ) {
+        roomService.startGame(roomId, user);
+        return ResponseEntity.ok().build();
+    }
 }

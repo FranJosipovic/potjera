@@ -46,6 +46,9 @@ interface RoomApi {
 
     @GET("rooms/code/{code}")
     suspend fun getRoomByCode(@Path("code") code: String): RoomDetailsResponse
+
+    @POST("rooms/{roomId}/start")
+    suspend fun startGame(@Path("roomId") roomId: String)
 }
 
 data class CreateRoomRequest(

@@ -4,6 +4,7 @@ import com.fran.dev.potjera.potjeradb.enums.RoomStatus;
 import com.fran.dev.potjera.potjeradb.models.User;
 import com.fran.dev.potjera.potjeradb.models.playmode.Room;
 import com.fran.dev.potjera.potjeradb.models.playmode.RoomPlayer;
+import com.fran.dev.potjera.potjeradb.repositories.QuickFireQuestionRepository;
 import com.fran.dev.potjera.potjeradb.repositories.RoomPlayerRepository;
 import com.fran.dev.potjera.potjeradb.repositories.RoomRepository;
 import com.fran.dev.potjera.potjeradb.repositories.UserRepository;
@@ -30,7 +31,9 @@ public class RoomService {
     private final RoomRepository roomRepository;
     private final RoomPlayerRepository roomPlayerRepository;
     private final UserRepository userRepository;
+    private final QuickFireQuestionRepository quickFireQuestionRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final GameSessionService gameSessionService;
 
     @Transactional
     public CreateRoomResponse createRoom(Long hostId, boolean isPrivate) {
@@ -241,5 +244,34 @@ public class RoomService {
                 players,
                 hunter
         );
+    }
+
+    @Transactional
+    public void startGame(String roomId, User user) {
+        Room room = roomRepository.findByIdWithPlayers(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("Room not found"));
+
+        // check if sender is host
+        boolean isHost = room.getPlayers().stream()
+                .anyMatch(rp -> rp.getPlayer().getId().equals(user.getId()) && rp.isHost());
+
+        if (!isHost) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only host can start the game");
+        }
+
+        if (room.getStatus() != RoomStatus.WAITING) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Room is not in waiting state");
+        }
+
+        if (room.getPlayers().size() < 2) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Need at least 2 players to start");
+        }
+
+        // update room status
+        room.setStatus(RoomStatus.IN_PROGRESS);
+        roomRepository.save(room);
+
+        // start the in-memory game session
+        gameSessionService.startGame(room);
     }
 }

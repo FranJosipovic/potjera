@@ -75,6 +75,22 @@ class RoomRepositoryImpl(
         }
     }
 
+    override suspend fun startGame(roomId: String): RoomResult<Unit> {
+        return try {
+            api.startGame(roomId)
+            RoomResult.Success(Unit)
+        } catch (e: HttpException) {
+            when (e.code()) {
+                403 -> RoomResult.Forbidden()
+                404 -> RoomResult.NotFound()
+                else -> RoomResult.UnknownError()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "startGame: ${e.message}", e)
+            RoomResult.UnknownError()
+        }
+    }
+
     override suspend fun joinPublicRoom(roomId: String): RoomResult<CreateRoomResponse> {
         return try {
             Log.d(TAG, "joinPublicRoom: roomId=$roomId")

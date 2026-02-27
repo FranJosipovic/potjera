@@ -38,6 +38,7 @@ class AuthRepositoryImpl(
             prefs.edit {
                 putString("token", response.token)
                     .putString("refreshToken", response.refreshToken)
+                    .putLong("user_id", response.userId)
             }
             AuthResult.Authorized(response)
         } catch (e: Exception) {
@@ -61,6 +62,7 @@ class AuthRepositoryImpl(
             prefs.edit {
                 putString("token", response.token)
                     .putString("refreshToken", response.refreshToken)
+                    .putLong("user_id", response.userId)
             }
             AuthResult.Authorized(response)
         } catch (e: HttpException) {

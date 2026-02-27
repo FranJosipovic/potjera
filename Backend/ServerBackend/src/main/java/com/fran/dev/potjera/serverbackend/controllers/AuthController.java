@@ -47,7 +47,8 @@ public class AuthController {
                         refreshTokenRepository.delete(token);
                         return ResponseEntity.badRequest().body("Refresh token expired. Please login again.");
                     }
-                    String newJwt = jwtUtil.generateToken(token.getUser().getEmail());
+                    var user = token.getUser();
+                    String newJwt = jwtUtil.generateToken(user.getId(), user.getEmail());
                     return ResponseEntity.ok(Map.of("token", newJwt));
                 })
                 .orElse(ResponseEntity.badRequest().body("Invalid refresh token."));
@@ -93,7 +94,8 @@ public class AuthController {
                 .map(refToken -> {
                     boolean isRefreshTokenValid = refreshTokenService.isTokenExpired(refToken);
                     if (isRefreshTokenValid) {
-                        String newJwt = jwtUtil.generateToken(refToken.getUser().getEmail());
+                        var user = refToken.getUser();
+                        String newJwt = jwtUtil.generateToken(user.getId(), user.getEmail());
                         return ResponseEntity.ok(Map.of("token", newJwt, "refreshToken", refToken.getToken()));
                     }
                     refreshTokenRepository.delete(refToken);

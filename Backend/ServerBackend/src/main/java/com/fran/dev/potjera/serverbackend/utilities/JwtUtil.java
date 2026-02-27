@@ -23,9 +23,10 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(String email) {
+    public String generateToken(Long userId, String email) {
         return Jwts.builder()
-                .subject(email)
+                .subject(String.valueOf(userId)) // <-- PRIMARY identity
+                .claim("email", email)           // optional
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(getSigningKey())
@@ -38,7 +39,18 @@ public class JwtUtil {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload()
+                .get("email", String.class);
+    }
+
+    public Long extractUserId(String token) {
+        String subject = Jwts.parser()
+                .verifyWith(getSigningKey())
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
                 .getSubject();
+
+        return Long.parseLong(subject);
     }
 
     public boolean isTokenValid(String token) {

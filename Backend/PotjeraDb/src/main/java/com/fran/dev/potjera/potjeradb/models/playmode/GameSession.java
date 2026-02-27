@@ -1,4 +1,3 @@
-/*
 package com.fran.dev.potjera.potjeradb.models.playmode;
 
 import com.fran.dev.potjera.potjeradb.enums.GameStage;
@@ -28,14 +27,13 @@ public class GameSession {
     private Room room;
 
     @Enumerated(EnumType.STRING)
-    private GameStage gameStage;
+    private GameStage gameStage = GameStage.COIN_BOOSTER;
 
     @CreationTimestamp
     private LocalDateTime startedAt;
 
     private LocalDateTime finishedAt;
 
-    @OneToMany(mappedBy = "gameSession", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PlayerSessionEntity> playerSessions = new ArrayList<>();
+//    @OneToMany(mappedBy = "gameSession", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<PlayerSessionEntity> playerSessions = new ArrayList<>();
 }
-*/

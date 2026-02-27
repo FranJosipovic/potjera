@@ -43,9 +43,17 @@ public class Room {
     @CreationTimestamp
     private LocalDateTime createdAt;
 
-    @OneToMany(mappedBy = "room", cascade = {CascadeType.PERSIST, CascadeType.REMOVE})
+    @OneToMany(
+            mappedBy = "room",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
     private List<RoomPlayer> players = new ArrayList<>();
 
-    /*@OneToOne(mappedBy = "room", cascade = CascadeType.ALL)
-    private GameSession gameSession;*/
+    @OneToOne(
+            mappedBy = "room",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    private GameSession gameSession;
 }
