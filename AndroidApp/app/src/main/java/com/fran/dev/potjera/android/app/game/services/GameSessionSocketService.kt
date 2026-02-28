@@ -104,20 +104,12 @@ class GameSessionSocketService @Inject constructor() {
     private fun handleEvent(event: GameSessionEventDto) {
         Log.d(TAG, "handleEvent: ${event.payload}")
         val socketEvent: GameSessionSocketEvent = when (event.type) {
-            "COIN_BOOSTER_START" -> {
-                val type = object : TypeToken<CoinBoosterPlayerStateDto>() {}.type
-                val payload: CoinBoosterPlayerStateDto = gson.fromJson(
+            "COIN_BOOSTER_FINISHED" -> {
+                val type = object : TypeToken<CoinBoosterFinishedDto>() {}.type
+                val payload: CoinBoosterFinishedDto = gson.fromJson(
                     gson.toJson(event.payload), type
                 )
-                GameSessionSocketEvent.CoinBoosterStarted(payload)
-            }
-
-            "PLAYER_FINISHED" -> {
-                val type = object : TypeToken<PlayerFinishedDto>() {}.type
-                val payload: PlayerFinishedDto = gson.fromJson(
-                    gson.toJson(event.payload), type
-                )
-                GameSessionSocketEvent.PlayerFinished(payload)
+                GameSessionSocketEvent.CoinBoosterFinished(payload)
             }
 
             "GAME_FINISHED" -> {
@@ -126,6 +118,38 @@ class GameSessionSocketService @Inject constructor() {
                     gson.toJson(event.payload), type
                 )
                 GameSessionSocketEvent.GameFinished(results)
+            }
+
+            "BOARD_PHASE_STARTING" -> {
+                val payload: BoardPhaseStartingDto = gson.fromJson(
+                    gson.toJson(event.payload),
+                    BoardPhaseStartingDto::class.java
+                )
+                GameSessionSocketEvent.BoardPhaseStarting(payload)
+            }
+
+            "CURRENT_PLAYER_INFO" -> {
+                val payload: CurrentPlayerInfoDto = gson.fromJson(
+                    gson.toJson(event.payload),
+                    CurrentPlayerInfoDto::class.java
+                )
+                GameSessionSocketEvent.CurrentPlayerInfo(payload)
+            }
+
+            "MONEY_OFFER" -> {
+                val payload: MoneyOfferDto = gson.fromJson(
+                    gson.toJson(event.payload),
+                    MoneyOfferDto::class.java
+                )
+                GameSessionSocketEvent.MoneyOffer(payload)
+            }
+
+            "MONEY_OFFER_ACCEPTED" -> {
+                val payload: MoneyOfferAcceptedDto = gson.fromJson(
+                    gson.toJson(event.payload),
+                    MoneyOfferAcceptedDto::class.java
+                )
+                GameSessionSocketEvent.MoneyOfferAccepted(payload)
             }
 
             else -> {
@@ -140,12 +164,11 @@ class GameSessionSocketService @Inject constructor() {
     }
 
     private fun handlePrivateMessage(event: GameSessionEventDto) {
-
         Log.d(TAG, "handlePrivateMessage: ${event.payload}")
         val socketEvent: GameSessionSocketEvent = when (event.type) {
             "COIN_BOOSTER_START" -> {
-                val type = object : TypeToken<CoinBoosterPlayerStateDto>() {}.type
-                val payload: CoinBoosterPlayerStateDto = gson.fromJson(
+                val type = object : TypeToken<CoinBoosterStartPayload>() {}.type
+                val payload: CoinBoosterStartPayload = gson.fromJson(
                     gson.toJson(event.payload), type
                 )
                 Log.d(
@@ -181,11 +204,56 @@ class GameSessionSocketService @Inject constructor() {
     // called when player finishes all questions
     fun sendFinish(gameSessionId: String, correctAnswers: Int) {
         val payload = gson.toJson(mapOf("correctAnswers" to correctAnswers))
-        stompClient?.send("/app/game-session/$gameSessionId/finish", payload)
+        stompClient?.send("/app/game-session/$gameSessionId/finish-coin-booster", payload)
             ?.subscribeOn(Schedulers.io())
             ?.subscribe(
                 { Log.d("GameSessionSocket", "Finish sent: correctAnswers=$correctAnswers") },
                 { Log.e("GameSessionSocket", "Failed to send finish: ${it.message}") }
+            )
+            ?.also { compositeDisposable.add(it) }
+    }
+
+    fun sendPlayerInfoRequest(gameSessionId: String) {
+        stompClient?.send("/app/game-session/$gameSessionId/player-info-request", "{}")
+            ?.subscribeOn(Schedulers.io())
+            ?.subscribe(
+                { Log.d(TAG, "PlayerInfoRequest sent") },
+                { Log.e(TAG, "Failed to send PlayerInfoRequest: ${it.message}") }
+            )
+            ?.also { compositeDisposable.add(it) }
+    }
+
+    fun sendMoneyOffer(gameSessionId: String, higherOffer: Float, lowerOffer: Float) {
+        val payload = gson.toJson(mapOf(
+            "higherOffer" to higherOffer,
+            "lowerOffer"  to lowerOffer
+        ))
+        stompClient?.send("/app/game-session/$gameSessionId/money-offer-request", payload)
+            ?.subscribeOn(Schedulers.io())
+            ?.subscribe(
+                { Log.d(TAG, "MoneyOffer sent: higher=$higherOffer lower=$lowerOffer") },
+                { Log.e(TAG, "Failed to send MoneyOffer: ${it.message}") }
+            )
+            ?.also { compositeDisposable.add(it) }
+    }
+
+    fun sendMoneyOfferResponse(gameSessionId: String, acceptedOffer: Float) {
+        val payload = gson.toJson(mapOf("offerAccepted" to acceptedOffer))
+        stompClient?.send("/app/game-session/$gameSessionId/money-offer-response", payload)
+            ?.subscribeOn(Schedulers.io())
+            ?.subscribe(
+                { Log.d(TAG, "MoneyOfferResponse sent: accepted=$acceptedOffer") },
+                { Log.e(TAG, "Failed to send MoneyOfferResponse: ${it.message}") }
+            )
+            ?.also { compositeDisposable.add(it) }
+    }
+
+    fun sendStartBoardQuestions(gameSessionId: String) {
+        stompClient?.send("/app/game-session/$gameSessionId/start-board-phase", "{}")
+            ?.subscribeOn(Schedulers.io())
+            ?.subscribe(
+                { Log.d(TAG, "StartBoardPhase sent") },
+                { Log.e(TAG, "Failed to send StartBoardPhase: ${it.message}") }
             )
             ?.also { compositeDisposable.add(it) }
     }
@@ -210,9 +278,15 @@ data class GameSessionEventDto(
     val payload: Any
 )
 
+data class CoinBoosterStartPayload(
+    val playerState: CoinBoosterPlayerStateDto,
+    val totalPlayersCount: Int
+)
+
 data class CoinBoosterPlayerStateDto(
     val playerId: Long,
     val isHunter: Boolean,
+    val isHost: Boolean,
     val correctAnswers: Int,
     val questions: List<CoinBoosterQuestionDto>,
     val isFinished: Boolean
@@ -224,16 +298,47 @@ data class CoinBoosterQuestionDto(
     val aliases: List<String>
 )
 
+data class BoardPhaseStartingDto(
+    val hunterId: Long,
+    val currentPlayerId: Long,
+    val playersFinishStatus: Map<Long, Float>
+)
+
+data class CurrentPlayerInfoDto(
+    val playerId: Long,
+    val correctAnswers: Int,
+    val coinsEarned: Int
+)
+
+data class MoneyOfferDto(
+    val currentPlayerId: Long,
+    val hunterId: Long,
+    val higherOffer: Float,
+    val lowerOffer: Float
+)
+
+data class MoneyOfferAcceptedDto(
+    val playerId: Long,
+    val acceptedOffer: Float,
+    val playerStartingIndex: Int
+)
+
 // ── Events ───────────────────────────────────────────────────────────────────
 
 sealed class GameSessionSocketEvent {
-    data class CoinBoosterStarted(val playerState: CoinBoosterPlayerStateDto) :
+    data class CoinBoosterStarted(val payload: CoinBoosterStartPayload) :
         GameSessionSocketEvent()
-
-    data class PlayerFinished(val payload: PlayerFinishedDto) : GameSessionSocketEvent()
+    data class CoinBoosterFinished(val payload: CoinBoosterFinishedDto) : GameSessionSocketEvent()
     data class GameFinished(val results: List<GameResultDto>) : GameSessionSocketEvent()
     data class PlayerLeft(val playerId: Long) : GameSessionSocketEvent()
+
+    // board phase
+    data class BoardPhaseStarting(val state: BoardPhaseStartingDto) : GameSessionSocketEvent()
+    data class CurrentPlayerInfo(val info: CurrentPlayerInfoDto) : GameSessionSocketEvent()
+    data class MoneyOffer(val offer: MoneyOfferDto) : GameSessionSocketEvent()
+    data class MoneyOfferAccepted(val data: MoneyOfferAcceptedDto) : GameSessionSocketEvent()
+
 }
 
-data class PlayerFinishedDto(val playerId: Long, val correctAnswers: Int)
+data class CoinBoosterFinishedDto(val playerId: Long,val username: String, val correctAnswers: Int)
 data class GameResultDto(val playerId: Long, val correctAnswers: Int)

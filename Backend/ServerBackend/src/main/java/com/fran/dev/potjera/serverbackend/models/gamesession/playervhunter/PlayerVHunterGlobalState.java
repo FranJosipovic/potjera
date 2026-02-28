@@ -7,7 +7,7 @@ import java.util.Map;
 
 @Data
 @Builder
-public class PlayerVHunterState {
+public class PlayerVHunterGlobalState {
     Long hunterId;
     Long currentPlayerId;
     //playerId + money earned -> -1 if hunted by hunter

@@ -7,10 +7,11 @@ import org.jspecify.annotations.Nullable;
 @Data
 @Builder
 public class PlayerVHunterBoardState {
-    BoardQuestion boardQuestion;
+    @Nullable BoardQuestion boardQuestion;
     @Nullable String hunterAnswer;
     @Nullable String playerAnswer;
     Integer hunterCorrectAnswers;
     Integer playerCorrectAnswers;
+    Integer playerStartingIndex;
     Float moneyInGame;
 }

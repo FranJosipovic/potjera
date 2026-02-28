@@ -11,7 +11,9 @@ import com.fran.dev.potjera.potjeradb.repositories.UserRepository;
 import com.fran.dev.potjera.serverbackend.models.room.CreateRoomResponse;
 import com.fran.dev.potjera.serverbackend.models.room.RoomDetailsResponse;
 import com.fran.dev.potjera.serverbackend.models.room.RoomPlayerDTO;
+import com.fran.dev.potjera.serverbackend.models.room.websocket.HunterChangedPayload;
 import com.fran.dev.potjera.serverbackend.models.room.websocket.PlayerJoinedPayload;
+import com.fran.dev.potjera.serverbackend.models.room.websocket.PlayerLeftRoomPayload;
 import com.fran.dev.potjera.serverbackend.models.room.websocket.RoomEvent;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
@@ -22,7 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 @RequiredArgsConstructor
@@ -60,7 +64,7 @@ public class RoomService {
                 .room(room)
                 .player(host)
                 .isHost(true)
-                .isReady(false)
+                .isReady(true)
                 .isHunter(false)
                 .build();
 
@@ -140,7 +144,7 @@ public class RoomService {
                 .room(room)
                 .player(user)
                 .isHost(false)
-                .isReady(false)
+                .isReady(true)
                 .build();
 
         roomPlayer.setHunter(room.getPlayers().size() == room.getMaxPlayers() - 1);
@@ -150,9 +154,11 @@ public class RoomService {
         messagingTemplate.convertAndSend(
                 "/topic/room/" + room.getId(),
                 new RoomEvent("PLAYER_JOINED", new PlayerJoinedPayload(
+                        roomPlayer.getId(),
                         user.getId(),
                         user.getDisplayUsername(),
                         roomPlayer.isHunter(),
+                        roomPlayer.isReady(),
                         new Random().nextInt(100) + 1
                 ))
         );
@@ -273,5 +279,108 @@ public class RoomService {
 
         // start the in-memory game session
         gameSessionService.startGame(room);
+    }
+
+    @Transactional
+    public void assignHunter(String roomId, Long hunterId, User user) {
+        Room room = roomRepository.findByIdWithPlayers(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("Room not found"));
+
+        boolean isHost = room.getPlayers().stream()
+                .anyMatch(rp -> rp.getPlayer().getId().equals(user.getId()) && rp.isHost());
+
+        if (!isHost) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the room host can assign a hunter");
+        }
+
+        boolean playerInRoom = room.getPlayers().stream()
+                .anyMatch(rp -> rp.getPlayer().getId().equals(hunterId));
+
+        if (!playerInRoom) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Player is not in this room");
+        }
+
+        // clear current hunter
+        room.getPlayers().forEach(rp -> {
+            rp.setHunter(false);
+            roomPlayerRepository.save(rp);
+        });
+
+        // assign new hunter
+        RoomPlayer newHunter = room.getPlayers().stream()
+                .filter(rp -> rp.getPlayer().getId().equals(hunterId))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException("Player not found in room"));
+
+        newHunter.setHunter(true);
+        roomPlayerRepository.save(newHunter);
+
+        // broadcast hunter changed
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId,
+                new RoomEvent("HUNTER_CHANGED", new HunterChangedPayload(
+                        newHunter.getId(),
+                        newHunter.getPlayer().getId()
+                ))
+        );
+    }
+
+    @Transactional
+    public void leaveRoom(String roomId, User user) {
+        Room room = roomRepository.findByIdWithPlayers(roomId)
+                .orElseThrow(() -> new EntityNotFoundException("Room not found"));
+
+        RoomPlayer leavingPlayer = room.getPlayers().stream()
+                .filter(rp -> rp.getPlayer().getId().equals(user.getId()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "You are not in this room"
+                ));
+
+        boolean wasHunter = leavingPlayer.isHunter();
+        boolean wasHost   = leavingPlayer.isHost();
+
+        // if host leaves → close room and notify everyone
+        if (wasHost) {
+            messagingTemplate.convertAndSend(
+                    "/topic/room/" + roomId,
+                    new RoomEvent("ROOM_CLOSED", Map.of(
+                            "reason", "Host left the room"
+                    ))
+            );
+            roomRepository.delete(room);
+            return;
+        }
+
+        roomPlayerRepository.delete(leavingPlayer);
+        room.getPlayers().remove(leavingPlayer);
+
+        if (room.getPlayers().isEmpty()) {
+            roomRepository.delete(room);
+            return;
+        }
+
+        Long newHunterId = null;
+
+        // assign new hunter if hunter left
+        if (wasHunter) {
+            room.getPlayers().forEach(rp -> {
+                rp.setHunter(false);
+                roomPlayerRepository.save(rp);
+            });
+
+            RoomPlayer newHunter = room.getPlayers().getLast();
+            newHunter.setHunter(true);
+            roomPlayerRepository.save(newHunter);
+            newHunterId = newHunter.getPlayer().getId();
+        }
+
+        messagingTemplate.convertAndSend(
+                "/topic/room/" + roomId,
+                new RoomEvent("PLAYER_LEFT", new PlayerLeftRoomPayload(
+                        user.getId(),    // no new host since room closes if host leaves
+                        newHunterId
+                ))
+        );
     }
 }

@@ -38,7 +38,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,20 +47,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fran.dev.potjera.android.app.domain.models.user.User
 import com.fran.dev.potjera.android.app.ui.components.LoadingButton
+import com.fran.dev.potjera.android.app.ui.theme.*
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Colors
-// ─────────────────────────────────────────────────────────────────────────────
-
-private val BgDeep = Color(0xFF1A1035)
-private val BgCard = Color(0xFF251848)
-private val BgCardBorder = Color(0xFF3A2A6A)
-private val BgInput = Color(0xFF1A1035)
-private val Gold = Color(0xFFF5A623)
-private val Purple = Color(0xFF9B59FC)
-private val White = Color(0xFFFFFFFF)
-private val TextMuted = Color(0xFFAA9FCC)
-private val GradButton = Brush.horizontalGradient(listOf(Color(0xFF7B2FFF), Color(0xFFCC3DF4)))
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Entry fee options

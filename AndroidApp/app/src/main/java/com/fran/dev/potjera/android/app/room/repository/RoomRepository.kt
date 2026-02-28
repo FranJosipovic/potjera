@@ -11,7 +11,8 @@ interface RoomRepository {
     suspend fun getPublicRooms(): RoomResult<List<RoomDetailsResponse>>
     suspend fun getRoomByCode(code: String): RoomResult<RoomDetailsResponse>
     suspend fun startGame(roomId: String): RoomResult<Unit>
-
+    suspend fun assignHunter(roomId: String, hunterId: Long): RoomResult<Unit>
+    suspend fun leaveRoom(roomId: String): RoomResult<Unit>
 }
 
 sealed class RoomResult<out T> {

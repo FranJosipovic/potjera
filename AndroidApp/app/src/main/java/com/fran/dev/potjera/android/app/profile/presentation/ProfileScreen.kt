@@ -49,37 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fran.dev.potjera.android.app.domain.models.user.User
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Color tokens (shared with HomeScreen)
-// ─────────────────────────────────────────────────────────────────────────────
-
-private val BgDeep = Color(0xFF1A1035)
-private val BgCard = Color(0xFF251848)
-private val BgCardBorder = Color(0xFF3A2A6A)
-private val Gold = Color(0xFFF5A623)
-private val Purple = Color(0xFF9B59FC)
-private val Cyan = Color(0xFF06C8C8)
-private val Green = Color(0xFF2ECC71)
-private val Red = Color(0xFFE74C3C)
-private val White = Color(0xFFFFFFFF)
-private val TextMuted = Color(0xFFAA9FCC)
-
-private val GradAvatar = Brush.linearGradient(
-    colors = listOf(Color(0xFFFFB703), Color(0xFFE07B00)),
-    start = Offset(0f, 0f),
-    end = Offset(200f, 200f)
-)
-private val GradAchievementUnlocked = Brush.linearGradient(
-    colors = listOf(Color(0xFF6B3A00), Color(0xFF4A2800)),
-    start = Offset(0f, 0f),
-    end = Offset(0f, 200f)
-)
-private val GradAchievementLocked = Brush.linearGradient(
-    colors = listOf(Color(0xFF2A1F45), Color(0xFF1E1535)),
-    start = Offset(0f, 0f),
-    end = Offset(0f, 200f)
-)
+import com.fran.dev.potjera.android.app.ui.theme.*
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ProfileScreen

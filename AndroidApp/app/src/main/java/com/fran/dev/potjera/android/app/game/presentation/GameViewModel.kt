@@ -4,13 +4,19 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fran.dev.potjera.android.app.game.services.BoardPhaseStartingDto
 import com.fran.dev.potjera.android.app.game.services.CoinBoosterPlayerStateDto
 import com.fran.dev.potjera.android.app.game.services.CoinBoosterQuestionDto
 import com.fran.dev.potjera.android.app.game.services.GameResultDto
 import com.fran.dev.potjera.android.app.game.services.GameSessionSocketEvent
 import com.fran.dev.potjera.android.app.game.services.GameSessionSocketService
-import com.fran.dev.potjera.android.app.game.services.PlayerFinishedDto
+import com.fran.dev.potjera.android.app.game.services.CoinBoosterFinishedDto
+import com.fran.dev.potjera.android.app.game.services.CurrentPlayerInfoDto
+import com.fran.dev.potjera.android.app.game.services.MoneyOfferAcceptedDto
+import com.fran.dev.potjera.android.app.game.services.MoneyOfferDto
+import com.fran.dev.potjera.android.app.room.api.RoomPlayerDTO
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.reactivex.schedulers.Schedulers
 import jakarta.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -30,6 +36,9 @@ class GameViewModel @Inject constructor(
         private const val TAG = "GameViewModel"
     }
 
+    private val _playersCount = MutableStateFlow<Int>(4)
+    var playersCount: StateFlow<Int> = _playersCount.asStateFlow()
+
     val myPlayerId: Long = prefs.getLong("user_id", 0L)
 
     private val _gamePhase = MutableStateFlow(GamePhase.STARTING)
@@ -38,11 +47,13 @@ class GameViewModel @Inject constructor(
     private val _isHunter = MutableStateFlow(false)
     val isHunter: StateFlow<Boolean> = _isHunter.asStateFlow()
 
+    private val _isHost = MutableStateFlow(false)
+    val isHost: StateFlow<Boolean> = _isHost.asStateFlow()
     private val _coinBoosterState = MutableStateFlow<CoinBoosterPlayerStateDto?>(null)
     val coinBoosterState: StateFlow<CoinBoosterPlayerStateDto?> = _coinBoosterState.asStateFlow()
 
-    private val _finishedPlayers = MutableStateFlow<List<PlayerFinishedDto>>(emptyList())
-    val finishedPlayers: StateFlow<List<PlayerFinishedDto>> = _finishedPlayers.asStateFlow()
+    private val _finishedPlayers = MutableStateFlow<List<CoinBoosterFinishedDto>>(emptyList())
+    val finishedPlayers: StateFlow<List<CoinBoosterFinishedDto>> = _finishedPlayers.asStateFlow()
 
     private val _gameResults = MutableStateFlow<List<GameResultDto>>(emptyList())
     val gameResults: StateFlow<List<GameResultDto>> = _gameResults.asStateFlow()
@@ -90,28 +101,50 @@ class GameViewModel @Inject constructor(
         Log.d(TAG, "handleEvent: $event")
         when (event) {
             is GameSessionSocketEvent.CoinBoosterStarted -> {
-                _coinBoosterState.value = event.playerState
-                _isHunter.value = event.playerState.isHunter
+                _coinBoosterState.value = event.payload.playerState
+                _isHunter.value = event.payload.playerState.isHunter
+                _isHost.value = event.payload.playerState.isHost
 
-                if (!event.playerState.isHunter) {
-                    startTimer(totalSeconds = 60 * event.playerState.questions.size)
+                if (!event.payload.playerState.isHunter) {
+                    startTimer(totalSeconds = 60 * event.payload.playerState.questions.size)
                 }
 
                 coinBoosterEventReceived = true
-                tryStartCoinBooster(event.playerState.isHunter)
+
+                _playersCount.value = event.payload.totalPlayersCount-1
+
+                tryStartCoinBooster(event.payload.playerState.isHunter)
             }
 
-            is GameSessionSocketEvent.PlayerFinished -> {
+            is GameSessionSocketEvent.CoinBoosterFinished -> {
                 _finishedPlayers.update { current ->
                     current + event.payload
                 }
-                // if this player already finished, they're in queue screen
-                // update the queue with new finished player info
             }
 
             is GameSessionSocketEvent.GameFinished -> {
                 _gameResults.value = event.results
                 _gamePhase.value = GamePhase.FINISHED
+            }
+
+            is GameSessionSocketEvent.BoardPhaseStarting -> {
+                _boardState.value = event.state
+                _gamePhase.value = GamePhase.BOARD_PHASE
+                if (_isHunter.value) {
+                    gameSessionSocketService.sendPlayerInfoRequest(gameSessionId)
+                }
+            }
+
+            is GameSessionSocketEvent.CurrentPlayerInfo -> {
+                _currentPlayerInfo.value = event.info
+            }
+
+            is GameSessionSocketEvent.MoneyOffer -> {
+                _moneyOffer.value = event.offer
+            }
+
+            is GameSessionSocketEvent.MoneyOfferAccepted -> {
+                _moneyOfferAccepted.value = event.data
             }
 
             is GameSessionSocketEvent.PlayerLeft -> {
@@ -233,8 +266,35 @@ class GameViewModel @Inject constructor(
         val state = _coinBoosterState.value ?: return null
         return state.questions.getOrNull(_currentQuestionIndex.value)
     }
+
+    private val _boardState = MutableStateFlow<BoardPhaseStartingDto?>(null)
+    val boardState: StateFlow<BoardPhaseStartingDto?> = _boardState.asStateFlow()
+
+    private val _currentPlayerInfo = MutableStateFlow<CurrentPlayerInfoDto?>(null)
+    val currentPlayerInfo: StateFlow<CurrentPlayerInfoDto?> = _currentPlayerInfo.asStateFlow()
+
+    private val _moneyOffer = MutableStateFlow<MoneyOfferDto?>(null)
+    val moneyOffer: StateFlow<MoneyOfferDto?> = _moneyOffer.asStateFlow()
+
+    private val _moneyOfferAccepted = MutableStateFlow<MoneyOfferAcceptedDto?>(null)
+    val moneyOfferAccepted: StateFlow<MoneyOfferAcceptedDto?> = _moneyOfferAccepted.asStateFlow()
+
+    private val _allPlayers = MutableStateFlow<List<CoinBoosterPlayerStateDto>>(emptyList())
+    val allPlayers: StateFlow<List<CoinBoosterPlayerStateDto>> = _allPlayers.asStateFlow()
+
+    fun sendMoneyOffer(higherOffer: Float, lowerOffer: Float) {
+        gameSessionSocketService.sendMoneyOffer(gameSessionId, higherOffer, lowerOffer)
+    }
+
+    fun sendMoneyOfferResponse(acceptedOffer: Float) {
+        gameSessionSocketService.sendMoneyOfferResponse(gameSessionId, acceptedOffer)
+    }
+
+    fun startBoardQuestions() {
+        gameSessionSocketService.sendStartBoardQuestions(gameSessionId)
+    }
 }
 
 enum class GamePhase {
-    STARTING, COIN_BOOSTER, COIN_BOOSTER_QUEUE, FINISHED
+    STARTING, COIN_BOOSTER, COIN_BOOSTER_QUEUE, BOARD_PHASE,FINISHED
 }

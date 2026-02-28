@@ -1,5 +1,6 @@
 package com.fran.dev.potjera.android.app.room.presentation.lobby
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,54 +36,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fran.dev.potjera.android.app.room.api.RoomPlayerDTO
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Colors
-// ─────────────────────────────────────────────────────────────────────────────
-
-private val BgDeep = Color(0xFF1A1035)
-private val BgCard = Color(0xFF251848)
-private val BgCardBorder = Color(0xFF3A2A6A)
-private val BgHunterCard = Color(0xFF3D1010)
-private val BgHunterBorder = Color(0xFF6B1A1A)
-private val Gold = Color(0xFFF5A623)
-private val Purple = Color(0xFF9B59FC)
-private val Green = Color(0xFF2ECC71)
-private val White = Color(0xFFFFFFFF)
-private val TextMuted = Color(0xFFAA9FCC)
-private val GradButton = Brush.horizontalGradient(listOf(Color(0xFF7B2FFF), Color(0xFFCC3DF4)))
-private val GradPrizeCard = Brush.linearGradient(
-    colors = listOf(Color(0xFF2A1848), Color(0xFF1A1035)),
-    start = Offset(0f, 0f),
-    end = Offset(0f, 200f)
-)
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Data models for lobby
-// ─────────────────────────────────────────────────────────────────────────────
-
-data class LobbyPlayer(
-    val username: String,
-    val rank: Int,
-    val isReady: Boolean,
-    val isHost: Boolean = false,
-    val avatarColor: Color = Purple
-)
-
-data class LobbyHunter(
-    val username: String,
-    val rankLabel: String,
-    val avatarColor: Color = Color(0xFFCC3333)
-)
+import com.fran.dev.potjera.android.app.ui.theme.*
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RoomLobbyScreen
@@ -99,18 +62,19 @@ fun RoomLobbyScreen(
     val entryFee = 100
 
     val viewModel = hiltViewModel<RoomLobbyViewModel>()
-
     val roomDetails by viewModel.roomDetails.collectAsState()
     val players by viewModel.players.collectAsState()
     val hunter by viewModel.hunter.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val isHost by viewModel.isHost.collectAsState()       // ← from VM
+    val isHost by viewModel.isHost.collectAsState()
     val isStartingGame by viewModel.isStartingGame.collectAsState()
 
+    // handle navigation events
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
                 is GameEvent.StartGame -> onStartGame(event.gameSessionId)
+                is GameEvent.RoomClosed -> onBack()
             }
         }
     }
@@ -119,12 +83,16 @@ fun RoomLobbyScreen(
         viewModel.initRoom(roomId)
     }
 
+    // intercept back press → leave room first
+    BackHandler {
+        viewModel.leaveRoom(roomId)
+        onBack()
+    }
+
     if (isLoading) {
-        CircularProgressIndicator(
-            color = Color.White,
-            strokeWidth = 2.dp,
-            modifier = Modifier.size(22.dp)
-        )
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(color = White, strokeWidth = 2.dp)
+        }
     } else if (roomDetails != null) {
         Box(
             modifier = Modifier
@@ -138,28 +106,25 @@ fun RoomLobbyScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Top bar
-                LobbyTopBar(onBack = onBack)
+                LobbyTopBar(onBack = {
+                    viewModel.leaveRoom(roomId)
+                    onBack()
+                })
 
-                // Room code card (only for private rooms)
                 RoomCodeCard(code = roomDetails!!.code ?: "-")
 
-                // Players section
                 PlayersSection(
                     players = players,
-                    maxPlayers = maxPlayers
+                    maxPlayers = maxPlayers,
+                    isHost = isHost,
+                    hunterId = hunter?.playerId,
+                    onAssignHunter = { playerId -> viewModel.assignHunter(roomId, playerId) }
                 )
 
-                // Hunter section
                 HunterSection(hunter = hunter)
 
-                // Prize pool + entry fee card
-                PrizePoolCard(
-                    prizePool = prizePool,
-                    entryFee = entryFee
-                )
+                PrizePoolCard(prizePool = prizePool, entryFee = entryFee)
 
-                // Start Game button (host only)
                 if (isHost) {
                     Box(
                         modifier = Modifier
@@ -171,7 +136,7 @@ fun RoomLobbyScreen(
                                 indication = null,
                                 interactionSource = remember { MutableInteractionSource() }
                             ) {
-                                viewModel.startGame(roomId)  // ← call VM
+                                viewModel.startGame(roomId)
                             }
                             .padding(vertical = 16.dp),
                         contentAlignment = Alignment.Center
@@ -191,13 +156,22 @@ fun RoomLobbyScreen(
                             )
                         }
                     }
+                    Text(
+                        text = "All set! Click Start Game",
+                        color = TextMuted,
+                        fontSize = 11.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
     } else {
-        Text("Something went wrong")
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Something went wrong", color = White)
+        }
     }
 }
 
@@ -235,6 +209,7 @@ private fun LobbyTopBar(onBack: () -> Unit) {
 
 @Composable
 private fun RoomCodeCard(code: String) {
+    LocalContext.current
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -258,7 +233,10 @@ private fun RoomCodeCard(code: String) {
                 letterSpacing = 3.sp
             )
             IconButton(
-                onClick = { },
+                onClick = {
+//                    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+//                    clipboard.setPrimaryClip(ClipData.newPlainText("Room Code", code))
+                },
                 modifier = Modifier
                     .size(40.dp)
                     .clip(RoundedCornerShape(8.dp))
@@ -280,9 +258,14 @@ private fun RoomCodeCard(code: String) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun PlayersSection(players: List<RoomPlayerDTO>, maxPlayers: Int) {
+private fun PlayersSection(
+    players: List<RoomPlayerDTO>,
+    maxPlayers: Int,
+    isHost: Boolean,
+    hunterId: Long?,
+    onAssignHunter: (Long) -> Unit,
+) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // Header
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
                 imageVector = Icons.Filled.Person,
@@ -299,15 +282,24 @@ private fun PlayersSection(players: List<RoomPlayerDTO>, maxPlayers: Int) {
             )
         }
 
-        // Player rows
         players.forEach { player ->
-            PlayerRow(player = player)
+            PlayerRow(
+                player = player,
+                isHost = isHost,
+                isCurrentHunter = player.playerId == hunterId,
+                onAssignHunter = { onAssignHunter(player.playerId) }
+            )
         }
     }
 }
 
 @Composable
-private fun PlayerRow(player: RoomPlayerDTO) {
+private fun PlayerRow(
+    player: RoomPlayerDTO,
+    isHost: Boolean,
+    isCurrentHunter: Boolean,
+    onAssignHunter: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -319,19 +311,16 @@ private fun PlayerRow(player: RoomPlayerDTO) {
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            // Avatar
             Box(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(Color.Blue),
+                    .background(if (isCurrentHunter) Color.Red else Purple),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Person,
-                    contentDescription = null,
-                    tint = White,
-                    modifier = Modifier.size(22.dp)
+                Text(
+                    text = if (isCurrentHunter) "😈" else "🎮",
+                    fontSize = 18.sp
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
@@ -347,6 +336,10 @@ private fun PlayerRow(player: RoomPlayerDTO) {
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("👑", fontSize = 13.sp)
                     }
+                    if (isCurrentHunter) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("🎯", fontSize = 13.sp)
+                    }
                 }
                 Text(
                     text = "Rank #${player.rank}",
@@ -356,24 +349,60 @@ private fun PlayerRow(player: RoomPlayerDTO) {
             }
         }
 
-        // Ready badge
-        Box(
-            modifier = Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(if (player.isReady) Green.copy(alpha = 0.15f) else BgCardBorder)
-                .border(
-                    1.dp,
-                    if (player.isReady) Green.copy(alpha = 0.5f) else BgCardBorder,
-                    RoundedCornerShape(8.dp)
-                )
-                .padding(horizontal = 12.dp, vertical = 5.dp)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = if (player.isReady) "Ready" else "Waiting",
-                color = if (player.isReady) Green else TextMuted,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+            // assign hunter button — only host sees, only for non-host players
+            if (isHost) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            if (isCurrentHunter) Color.Red.copy(alpha = 0.2f)
+                            else BgCardBorder
+                        )
+                        .border(
+                            1.dp,
+                            if (isCurrentHunter) Color.Red.copy(alpha = 0.5f)
+                            else BgCardBorder,
+                            RoundedCornerShape(8.dp)
+                        )
+                        .clickable(
+                            indication = null,
+                            interactionSource = remember { MutableInteractionSource() },
+                            onClick = onAssignHunter
+                        )
+                        .padding(horizontal = 10.dp, vertical = 5.dp)
+                ) {
+                    Text(
+                        text = if (isCurrentHunter) "Hunter 🎯" else "Set Hunter",
+                        color = if (isCurrentHunter) Color.Red else TextMuted,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            // ready badge
+            Box(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (player.isReady) Green.copy(alpha = 0.15f) else BgCardBorder)
+                    .border(
+                        1.dp,
+                        if (player.isReady) Green.copy(alpha = 0.5f) else BgCardBorder,
+                        RoundedCornerShape(8.dp)
+                    )
+                    .padding(horizontal = 12.dp, vertical = 5.dp)
+            ) {
+                Text(
+                    text = if (player.isReady) "Ready" else "Waiting",
+                    color = if (player.isReady) Green else TextMuted,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
 }
@@ -385,7 +414,6 @@ private fun PlayerRow(player: RoomPlayerDTO) {
 @Composable
 private fun HunterSection(hunter: RoomPlayerDTO?) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        // Header
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("🎯 ", fontSize = 18.sp)
             Text(
@@ -396,7 +424,6 @@ private fun HunterSection(hunter: RoomPlayerDTO?) {
             )
         }
 
-        // Hunter card
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -425,7 +452,7 @@ private fun HunterSection(hunter: RoomPlayerDTO?) {
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = hunter.rank.toString(),
+                        text = "Rank #${hunter.rank}",
                         color = TextMuted,
                         fontSize = 12.sp
                     )

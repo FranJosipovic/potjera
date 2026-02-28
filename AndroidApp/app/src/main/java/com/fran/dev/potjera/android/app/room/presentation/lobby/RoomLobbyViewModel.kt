@@ -1,6 +1,7 @@
 package com.fran.dev.potjera.android.app.room.presentation.lobby
 
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fran.dev.potjera.android.app.room.api.RoomDetailsResponse
@@ -25,6 +26,10 @@ class RoomLobbyViewModel @Inject constructor(
     private val socketService: RoomSocketService,
     private val prefs: SharedPreferences
 ) : ViewModel() {
+
+    companion object{
+        private const val TAG = "RoomLobbyViewModel"
+    }
 
     private val myUserId = prefs.getLong("user_id", 0L)
 
@@ -97,39 +102,72 @@ class RoomLobbyViewModel @Inject constructor(
         viewModelScope.launch {
             socketService.events.collect { event ->
                 when (event) {
-                    is RoomSocketEvent.PlayerJoined -> {
+                    is RoomSocketEvent.GameStarting -> {
+                        _events.send(GameEvent.StartGame(event.payload.gameSessionId))
+                    }
 
+                    is RoomSocketEvent.HunterChanged -> {
+
+                        Log.d(TAG, "HunterChanged: ${event.payload}")
+
+                        _players.update { current ->
+                            current.map { it.copy(isHunter = it.playerId == event.payload.playerId) }
+                        }
+                        _hunter.value =
+                            _players.value.find { it.playerId == event.payload.playerId }
+                    }
+
+                    is RoomSocketEvent.PlayerJoined -> {
                         val player = RoomPlayerDTO(
-                            id = "",
-                            playerId = 0,
+                            playerId = event.player.playerId,
                             username = event.player.username,
                             rank = event.player.rank,
                             isHost = false,
-                            isReady = false,
-                            isHunter = false
+                            isReady = event.player.isReady,
+                            isHunter = event.player.isHunter
                         )
 
                         if (event.player.isHunter) {
+                            // remove hunter flag from previous hunter
+                            _players.update { current ->
+                                current.map { it.copy(isHunter = false) }
+                            }
                             _hunter.value = player
                         }
 
+                        _players.update { current -> current + player }
+                    }
+
+                    is RoomSocketEvent.PlayerLeftRoom -> {
                         _players.update { current ->
-                            current + player
+                            current.filter { it.playerId != event.payLoad.playerId }
+                        }
+
+                        event.payLoad.newHunterId?.let { newHunterId ->
+                            _players.update { current ->
+                                current.map { it.copy(isHunter = it.playerId == newHunterId) }
+                            }
+                            _hunter.value = _players.value.find { it.playerId == newHunterId }
                         }
                     }
 
-                    is RoomSocketEvent.PlayerLeft -> {
-                        _players.update { current ->
-                            current.filter { it.playerId.toString() != event.playerId }
-                        }
-                    }
-
-                    is RoomSocketEvent.GameStarting -> {
-                        //startGame(event.payload.gameSessionId)
-                        _events.send(GameEvent.StartGame(event.payload.gameSessionId))
+                    is RoomSocketEvent.RoomClosed -> {
+                        _events.send(GameEvent.RoomClosed)
                     }
                 }
             }
+        }
+    }
+
+    fun assignHunter(roomId: String, hunterId: Long) {
+        viewModelScope.launch {
+            roomRepository.assignHunter(roomId, hunterId)
+        }
+    }
+
+    fun leaveRoom(roomId: String) {
+        viewModelScope.launch {
+            roomRepository.leaveRoom(roomId)
         }
     }
 
@@ -144,4 +182,5 @@ class RoomLobbyViewModel @Inject constructor(
 
 sealed class GameEvent {
     data class StartGame(val gameSessionId: String) : GameEvent()
+    object RoomClosed : GameEvent()
 }

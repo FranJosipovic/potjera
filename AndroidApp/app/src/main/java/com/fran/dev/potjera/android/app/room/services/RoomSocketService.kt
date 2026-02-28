@@ -94,7 +94,26 @@ class RoomSocketService @Inject constructor() {
             }
 
             "PLAYER_LEFT" -> {
-                RoomSocketEvent.PlayerLeft(event.payload.toString())
+                val payload = gson.fromJson(
+                    gson.toJson(event.payload),
+                    PlayerLeftRoomDto::class.java)
+                RoomSocketEvent.PlayerLeftRoom(payload)
+            }
+
+            "HUNTER_CHANGED" -> {
+                val payload = gson.fromJson(
+                    gson.toJson(event.payload),
+                    HunterChangedDto::class.java
+                )
+                RoomSocketEvent.HunterChanged(payload)
+            }
+
+            "ROOM_CLOSED" -> {
+                val payload = gson.fromJson(
+                    gson.toJson(event.payload),
+                    RoomClosedDto::class.java
+                )
+                RoomSocketEvent.RoomClosed(payload)
             }
 
             else -> {
@@ -120,9 +139,10 @@ data class RoomEventDto(
 )
 
 data class PlayerJoinedDto(
-    val playerId: String,
+    val playerId: Long,
     val username: String,
     val isHunter: Boolean,
+    val isReady: Boolean,
     val rank: Int
 )
 
@@ -131,8 +151,23 @@ data class GameStartingDto(
     val message: String
 )
 
+data class HunterChangedDto(
+    val playerId: Long
+)
+
+data class PlayerLeftRoomDto(
+    val playerId: Long,
+    val newHunterId: Long?
+)
+
+data class RoomClosedDto(
+    val reason: String
+)
+
 sealed class RoomSocketEvent {
     data class PlayerJoined(val player: PlayerJoinedDto) : RoomSocketEvent()
-    data class PlayerLeft(val playerId: String) : RoomSocketEvent()
     data class GameStarting(val payload: GameStartingDto) : RoomSocketEvent()
+    data class HunterChanged(val payload: HunterChangedDto) : RoomSocketEvent()
+    data class PlayerLeftRoom(val payLoad: PlayerLeftRoomDto) : RoomSocketEvent()
+    data class RoomClosed(val payload: RoomClosedDto): RoomSocketEvent()
 }

@@ -1,6 +1,7 @@
 package com.fran.dev.potjera.serverbackend.controllers;
 
 import com.fran.dev.potjera.potjeradb.models.User;
+import com.fran.dev.potjera.serverbackend.models.room.AssignHunterRequest;
 import com.fran.dev.potjera.serverbackend.models.room.CreateRoomRequest;
 import com.fran.dev.potjera.serverbackend.models.room.CreateRoomResponse;
 import com.fran.dev.potjera.serverbackend.models.room.RoomDetailsResponse;
@@ -71,6 +72,25 @@ public class RoomController {
             @AuthenticationPrincipal User user
     ) {
         roomService.startGame(roomId, user);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{roomId}/assign-hunter")
+    public ResponseEntity<Void> assignHunter(
+            @PathVariable String roomId,
+            @RequestBody AssignHunterRequest request,  // ← receives {"hunterId": 123}
+            @AuthenticationPrincipal User user
+    ){
+        roomService.assignHunter(roomId, request.hunterId, user);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{roomId}/leave")
+    public ResponseEntity<Void> leaveRoom(
+            @PathVariable String roomId,
+            @AuthenticationPrincipal User user
+    ) {
+        roomService.leaveRoom(roomId, user);
         return ResponseEntity.ok().build();
     }
 }

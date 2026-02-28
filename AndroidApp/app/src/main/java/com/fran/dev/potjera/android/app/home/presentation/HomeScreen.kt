@@ -28,7 +28,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -36,28 +35,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fran.dev.potjera.android.app.domain.models.user.User
+import com.fran.dev.potjera.android.app.ui.theme.*
 import kotlin.math.roundToInt
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Color tokens
-// ─────────────────────────────────────────────────────────────────────────────
-
-private val BgDeep = Color(0xFF1A1035)
-private val BgCard = Color(0xFF251848)
-private val BgCardBorder = Color(0xFF3A2A6A)
-private val Gold = Color(0xFFF5A623)
-private val Purple = Color(0xFF9B59FC)
-private val Cyan = Color(0xFF06C8C8)
-private val White = Color(0xFFFFFFFF)
-private val TextMuted = Color(0xFFAA9FCC)
-
-private val GradCreate = Brush.horizontalGradient(listOf(Color(0xFFCC3DF4), Color(0xFFFF6B9D)))
-private val GradJoin = Brush.horizontalGradient(listOf(Color(0xFF5B5BFF), Color(0xFF00D4FF)))
-private val GradCoin = Brush.linearGradient(
-    colors = listOf(Color(0xFFFFB703), Color(0xFFE07B00)),
-    start = Offset(0f, 0f),
-    end = Offset(500f, 300f)
-)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HomeScreen

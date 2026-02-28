@@ -1,6 +1,7 @@
 package com.fran.dev.potjera.android.app.room.repository
 
 import android.util.Log
+import com.fran.dev.potjera.android.app.room.api.AssignHunterRequest
 import com.fran.dev.potjera.android.app.room.api.CreateRoomRequest
 import com.fran.dev.potjera.android.app.room.api.CreateRoomResponse
 import com.fran.dev.potjera.android.app.room.api.RoomApi
@@ -127,6 +128,42 @@ class RoomRepositoryImpl(
             }
         } catch (e: Exception) {
             Log.e(TAG, "joinPrivateRoom: ${e.message}", e)
+            RoomResult.UnknownError()
+        }
+    }
+
+    override suspend fun leaveRoom(roomId: String): RoomResult<Unit> {
+        return try {
+            Log.d(TAG, "leaveRoom: roomId=$roomId")
+            api.leave(roomId)
+            RoomResult.Success(Unit)
+        } catch (e: HttpException) {
+            Log.e(TAG, "leaveRoom: HTTP ${e.code()} ${e.message()}")
+            when (e.code()) {
+                404 -> RoomResult.NotFound()
+                400 -> RoomResult.UnknownError()
+                else -> RoomResult.UnknownError()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "leaveRoom: ${e.message}", e)
+            RoomResult.UnknownError()
+        }
+    }
+
+    override suspend fun assignHunter(roomId: String, hunterId: Long): RoomResult<Unit> {
+        return try {
+            Log.d(TAG, "assignHunter: roomId=$roomId hunterId=$hunterId")
+            api.assignHunter(roomId, AssignHunterRequest(hunterId))
+            RoomResult.Success(Unit)
+        } catch (e: HttpException) {
+            Log.e(TAG, "assignHunter: HTTP ${e.code()} ${e.message()}")
+            when (e.code()) {
+                403 -> RoomResult.Forbidden()
+                404 -> RoomResult.NotFound()
+                else -> RoomResult.UnknownError()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "assignHunter: ${e.message}", e)
             RoomResult.UnknownError()
         }
     }

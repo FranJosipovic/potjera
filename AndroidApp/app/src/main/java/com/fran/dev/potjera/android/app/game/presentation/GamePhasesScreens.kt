@@ -62,28 +62,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fran.dev.potjera.android.app.game.services.CoinBoosterQuestionDto
 import com.fran.dev.potjera.android.app.game.services.GameResultDto
-import com.fran.dev.potjera.android.app.game.services.PlayerFinishedDto
+import com.fran.dev.potjera.android.app.game.services.CoinBoosterFinishedDto
+import com.fran.dev.potjera.android.app.ui.theme.*
 import kotlinx.coroutines.delay
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Colors
-// ─────────────────────────────────────────────────────────────────────────────
-
-private val BgDeep = Color(0xFF1A1035)
-private val BgCard = Color(0xFF251848)
-private val BgCardBorder = Color(0xFF3A2A6A)
-private val BgInput = Color(0xFF1A1035)
-private val Gold = Color(0xFFF5A623)
-private val Purple = Color(0xFF9B59FC)
-private val Green = Color(0xFF2ECC71)
-private val Red = Color(0xFFE74C3C)
-private val Cyan = Color(0xFF06C8C8)
-private val White = Color(0xFFFFFFFF)
-private val TextMuted = Color(0xFFAA9FCC)
-private val BgGold = Color(0xFF3D2800)
-private val BgGoldBorder = Color(0xFF8B5E00)
-private val GradButton = Brush.horizontalGradient(listOf(Color(0xFF7B2FFF), Color(0xFFCC3DF4)))
-private val GradButtonDim = Brush.horizontalGradient(listOf(Color(0xFF3A1A70), Color(0xFF5A1A80)))
 
 // ─────────────────────────────────────────────────────────────────────────────
 // StartingScreen — countdown overlay on lobby
@@ -519,15 +500,19 @@ fun CoinBoosterScreen(
 
 @Composable
 fun CoinBoosterQueueScreen(
-    finishedPlayers: List<PlayerFinishedDto> = emptyList(),
-    totalPlayers: Int = 4,
+    finishedPlayers: List<CoinBoosterFinishedDto> = emptyList(),
+    totalPlayers: Int,
+    isHost: Boolean,
+    onStartBoardQuestions: () -> Unit,
 ) {
+    val allFinished = finishedPlayers.size >= totalPlayers
+
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.4f,
-        targetValue = 1f,
+        initialValue  = 0.4f,
+        targetValue   = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(800, easing = EaseInOut),
+            animation  = tween(800, easing = EaseInOut),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulse_alpha"
@@ -539,7 +524,7 @@ fun CoinBoosterQueueScreen(
             .background(BgDeep)
     ) {
         Column(
-            modifier = Modifier
+            modifier            = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 20.dp, vertical = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -547,21 +532,24 @@ fun CoinBoosterQueueScreen(
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            // animated waiting indicator
-            Text("⏳", fontSize = 52.sp, modifier = Modifier.scale(alpha))
-
             Text(
-                text = "Waiting for others...",
-                color = White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+                text     = if (allFinished) "✅" else "⏳",
+                fontSize = 52.sp,
+                modifier = if (allFinished) Modifier else Modifier.scale(alpha)
             )
 
             Text(
-                text = "${finishedPlayers.size} / $totalPlayers players finished",
-                color = TextMuted,
-                fontSize = 14.sp,
+                text       = if (allFinished) "Everyone finished!" else "Waiting for others...",
+                color      = White,
+                fontSize   = 22.sp,
+                fontWeight = FontWeight.Bold,
+                textAlign  = TextAlign.Center
+            )
+
+            Text(
+                text      = "${finishedPlayers.size} / $totalPlayers players finished",
+                color     = TextMuted,
+                fontSize  = 14.sp,
                 textAlign = TextAlign.Center
             )
 
@@ -573,8 +561,7 @@ fun CoinBoosterQueueScreen(
                     .clip(RoundedCornerShape(3.dp))
                     .background(BgCardBorder)
             ) {
-                val progress =
-                    if (totalPlayers > 0) finishedPlayers.size.toFloat() / totalPlayers else 0f
+                val progress = if (totalPlayers > 0) finishedPlayers.size.toFloat() / totalPlayers else 0f
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(progress)
@@ -587,13 +574,13 @@ fun CoinBoosterQueueScreen(
             // finished players list
             if (finishedPlayers.isNotEmpty()) {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier            = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Text(
-                        text = "Finished",
-                        color = TextMuted,
-                        fontSize = 13.sp,
+                        text       = "Finished",
+                        color      = TextMuted,
+                        fontSize   = 13.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                     finishedPlayers.forEach { player ->
@@ -604,12 +591,12 @@ fun CoinBoosterQueueScreen(
                                 .background(BgCard)
                                 .border(1.dp, Green.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
                                 .padding(horizontal = 16.dp, vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+                            verticalAlignment     = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Box(
-                                    modifier = Modifier
+                                    modifier         = Modifier
                                         .size(34.dp)
                                         .clip(CircleShape)
                                         .background(Green.copy(alpha = 0.2f))
@@ -617,24 +604,24 @@ fun CoinBoosterQueueScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Icon(
-                                        imageVector = Icons.Filled.Check,
+                                        imageVector        = Icons.Filled.Check,
                                         contentDescription = null,
-                                        tint = Green,
-                                        modifier = Modifier.size(16.dp)
+                                        tint               = Green,
+                                        modifier           = Modifier.size(16.dp)
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    text = "Player ${player.playerId}",
-                                    color = White,
-                                    fontSize = 14.sp,
+                                    text       = player.username,
+                                    color      = White,
+                                    fontSize   = 14.sp,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("⚡ ", fontSize = 12.sp)
                                 Text(
-                                    text = "${player.correctAnswers} correct",
+                                    text  = "${player.correctAnswers} correct",
                                     color = TextMuted,
                                     fontSize = 13.sp
                                 )
@@ -643,6 +630,52 @@ fun CoinBoosterQueueScreen(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // start board questions button — host only, all finished
+            if (isHost && allFinished) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(GradButton)
+                            .clickable(
+                                indication        = null,
+                                interactionSource = remember { MutableInteractionSource() },
+                                onClick           = onStartBoardQuestions
+                            )
+                            .padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text       = "Start Board Questions →",
+                            color      = White,
+                            fontSize   = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    Text(
+                        text     = "All players finished — ready to continue!",
+                        color    = TextMuted,
+                        fontSize = 11.sp
+                    )
+                }
+            } else if (!isHost && allFinished) {
+                // non-host sees waiting message
+                Text(
+                    text      = "Waiting for host to start next phase...",
+                    color     = TextMuted,
+                    fontSize  = 13.sp,
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -832,10 +865,12 @@ fun CoinBoosterScreenPreview() {
 fun CoinBoosterQueueScreenPreview() {
     CoinBoosterQueueScreen(
         finishedPlayers = listOf(
-            PlayerFinishedDto(playerId = 1L, correctAnswers = 7),
-            PlayerFinishedDto(playerId = 2L, correctAnswers = 5),
+            CoinBoosterFinishedDto(playerId = 1L,"matko", correctAnswers = 7),
+            CoinBoosterFinishedDto(playerId = 2L,"bratko", correctAnswers = 5),
         ),
-        totalPlayers = 4
+        totalPlayers = 4,
+        isHost = true,
+        {}
     )
 }
 

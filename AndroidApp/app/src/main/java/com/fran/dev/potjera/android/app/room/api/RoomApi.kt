@@ -5,10 +5,8 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
-import java.time.LocalDateTime
 
 data class RoomPlayerDTO(
-    val id: String,
     val playerId: Long,
     val username: String,
     val rank: Int,
@@ -49,8 +47,18 @@ interface RoomApi {
 
     @POST("rooms/{roomId}/start")
     suspend fun startGame(@Path("roomId") roomId: String)
+
+    @POST("rooms/{roomId}/assign-hunter")
+    suspend fun assignHunter(
+        @Path("roomId") roomId: String,
+        @Body request: AssignHunterRequest
+    )
+
+    @POST("rooms/{roomId}/leave")
+    suspend fun leave(@Path("roomId") roomId: String)
 }
 
+data class AssignHunterRequest(val hunterId: Long)
 data class CreateRoomRequest(
     val isPrivate: Boolean,
 )
