@@ -15,6 +15,7 @@ import com.fran.dev.potjera.android.app.game.services.GameSessionSocketEvent
 import com.fran.dev.potjera.android.app.game.services.GameSessionSocketService
 import com.fran.dev.potjera.android.app.game.services.MoneyOfferDto
 import com.fran.dev.potjera.android.app.game.services.PlayerPlayingInfo
+import com.fran.dev.potjera.android.app.game.services.PlayerVHunterGlobalStateDto
 import com.fran.dev.potjera.android.app.game.toState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
@@ -238,9 +239,7 @@ class GameViewModel @Inject constructor(
             is GameSessionSocketEvent.BoardPhaseStarting -> {
                 _playerVHunterGlobalState.value = event.dto.globalState.toState()
                 _playerVHunterBoardState.value = event.dto.boardState.toState()
-                _allPlayers.value = event.dto.globalState.players.map {
-                    PlayerPlayingInfo(it.key, it.value)
-                }
+                updateAllPlayers(event.dto.globalState)
                 _moneyOffer.value = null
                 _gamePhase.value = GamePhase.BOARD_PHASE
             }
@@ -275,6 +274,7 @@ class GameViewModel @Inject constructor(
                 val state = event.dto
                 val username = state.players[state.currentPlayerId] ?: "Unknown"
                 val money = state.playersFinishStatus[state.currentPlayerId] ?: 0f
+                updateAllPlayers(event.dto)
                 viewModelScope.launch { _gameEvent.send(GameEvent.PlayerWon(username, money)) }
             }
 
@@ -282,6 +282,7 @@ class GameViewModel @Inject constructor(
                 _playerVHunterGlobalState.update { event.dto.toState() }
                 val state = event.dto
                 val username = state.players[state.currentPlayerId] ?: "Unknown"
+                updateAllPlayers(event.dto)
                 viewModelScope.launch { _gameEvent.send(GameEvent.PlayerCaught(username)) }
             }
 
@@ -326,6 +327,22 @@ class GameViewModel @Inject constructor(
         return dp[a.length][b.length]
     }
 
+    // ── Utils ─────────────────────────────────────────────────────────────
+
+    private fun updateAllPlayers(globalState: PlayerVHunterGlobalStateDto){
+        _allPlayers.value = globalState.playersFinishStatus.map {
+
+            val username = globalState.players[it.key] ?: "Unknown"
+
+            var playerMoneyEarned = it.value
+            if(playerMoneyEarned == -1f){
+                playerMoneyEarned = 0f
+            }
+
+            PlayerPlayingInfo(it.key, username, playerMoneyEarned)
+        }
+    }
+
     // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     override fun onCleared() {
@@ -340,6 +357,7 @@ enum class GamePhase {
     COIN_BOOSTER,
     COIN_BOOSTER_QUEUE,
     BOARD_PHASE,
+    PLAYERS_ANSWERING_PHASE,
     FINISHED
 }
 

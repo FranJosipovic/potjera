@@ -320,6 +320,7 @@ data class CoinBoosterPlayerStateDto(
 data class PlayerPlayingInfo(
     val playerId: Long,
     val username: String,
+    val moneyEarned: Float
 )
 
 data class CoinBoosterQuestionDto(

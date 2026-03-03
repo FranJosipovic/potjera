@@ -60,6 +60,8 @@ import com.fran.dev.potjera.android.app.game.services.PlayerPlayingInfo
 import com.fran.dev.potjera.android.app.ui.theme.BgCard
 import com.fran.dev.potjera.android.app.ui.theme.BgCardBorder
 import com.fran.dev.potjera.android.app.ui.theme.BgDeep
+import com.fran.dev.potjera.android.app.ui.theme.BgGold
+import com.fran.dev.potjera.android.app.ui.theme.BgGoldBorder
 import com.fran.dev.potjera.android.app.ui.theme.Cyan
 import com.fran.dev.potjera.android.app.ui.theme.Gold
 import com.fran.dev.potjera.android.app.ui.theme.GradButton
@@ -553,19 +555,19 @@ private fun BoardLadder(
             val offerBorderColor: Color
             when {
                 isHigherOfferStep -> {
-                    offerLabel = "🔼  ${higherOffer.toInt()}€"
+                    offerLabel = "► ${higherOffer.toInt()}€ ◄"
                     offerTextColor = White
                     offerBorderColor = White
                 }
 
                 isEarnedStep -> {
-                    offerLabel = "${boardState.moneyInGame.toInt()}€"
+                    offerLabel = "► ${boardState.moneyInGame.toInt()}€ ◄"
                     offerTextColor = White
                     offerBorderColor = White
                 }
 
                 isLowerOfferStep -> {
-                    offerLabel = "🔽  ${lowerOffer.toInt()}€"
+                    offerLabel = "► ${lowerOffer.toInt()}€ ◄"
                     offerTextColor = White
                     offerBorderColor = White
                 }
@@ -842,6 +844,7 @@ private fun StatusCard(emoji: String, message: String, color: Color) {
 // Player indicators
 // ─────────────────────────────────────────────────────────────────────────────
 
+
 @Composable
 private fun PlayerIndicators(
     allPlayers: List<PlayerPlayingInfo>,
@@ -850,12 +853,14 @@ private fun PlayerIndicators(
     myPlayerId: Long,
 ) {
     val nonHunterPlayers = allPlayers.filter { it.playerId != hunterId }
+    val totalEarned = nonHunterPlayers.sumOf { it.moneyEarned.toDouble() }.toFloat()
 
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text("Players", color = TextMuted, fontSize = 11.sp)
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -898,6 +903,46 @@ private fun PlayerIndicators(
                     if (isActive) Text("▲", color = Purple, fontSize = 10.sp)
                 }
             }
+        }
+
+        // ── Total earned bar ──────────────────────────────────────────────────
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(12.dp))
+                .background(BgCard)
+                .border(1.dp, BgGoldBorder.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                .padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .background(BgGold)
+                        .border(1.dp, BgGoldBorder, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("🪙", fontSize = 13.sp)
+                }
+                Text(
+                    text = "Team earnings",
+                    color = TextMuted,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            Text(
+                text = "${totalEarned.toInt()}€",
+                color = Gold,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.ExtraBold
+            )
         }
     }
 }
