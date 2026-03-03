@@ -1,5 +1,6 @@
 package com.fran.dev.potjera.serverbackend.controllers.websocket;
 
+import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.AnswerBoardQuestionPayload;
 import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.MoneyOfferRequestPayload;
 import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.MoneyOfferResponsePayload;
 import com.fran.dev.potjera.serverbackend.services.GameSessionService;
@@ -78,22 +79,6 @@ public class GameSessionWebSocketController {
         gameSessionService.startBoardPhase(gameSessionId, userId);
     }
 
-    @MessageMapping("/game-session/{gameSessionId}/player-info-request")
-    public void onPlayerInfoRequest(
-            @DestinationVariable String gameSessionId,
-            Principal principal
-    ) {
-        if (principal == null) {
-            logger.warn("No authenticated user");
-            return;
-        }
-
-        Long hunterId = Long.parseLong(principal.getName());
-        logger.info("Hunter {} requesting player info for session {}", hunterId, gameSessionId);
-
-        gameSessionService.sendCurrentPlayerInfo(gameSessionId, hunterId);
-    }
-
     @MessageMapping("/game-session/{gameSessionId}/money-offer-request")
     public void onMoneyOfferRequest(
             @DestinationVariable String gameSessionId,
@@ -130,5 +115,24 @@ public class GameSessionWebSocketController {
         gameSessionService.handleMoneyOfferResponse(gameSessionId, playerId, payload.offerAccepted());
     }
 
+    @MessageMapping("/game-session/{gameSessionId}/player-answer-board-question")
+    public void onPlayerAnswerBoardQuestion(
+            @DestinationVariable String gameSessionId,
+            @Payload AnswerBoardQuestionPayload payload,
+            Principal principal
+    ) {
+        Long playerId = Long.parseLong(principal.getName());
+        gameSessionService.handleBoardAnswer(gameSessionId, playerId, payload.answer(), false);
+    }
+
+    @MessageMapping("/game-session/{gameSessionId}/hunter-answer-board-question")
+    public void onHunterAnswerBoardQuestion(
+            @DestinationVariable String gameSessionId,
+            @Payload AnswerBoardQuestionPayload payload,
+            Principal principal
+    ) {
+        Long hunterId = Long.parseLong(principal.getName());
+        gameSessionService.handleBoardAnswer(gameSessionId, hunterId, payload.answer(), true);
+    }
 }
 

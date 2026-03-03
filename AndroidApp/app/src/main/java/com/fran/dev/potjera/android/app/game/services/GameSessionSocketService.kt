@@ -102,65 +102,92 @@ class GameSessionSocketService @Inject constructor() {
     }
 
     private fun handleEvent(event: GameSessionEventDto) {
-        Log.d(TAG, "handleEvent: ${event.payload}")
         val socketEvent: GameSessionSocketEvent = when (event.type) {
+
             "COIN_BOOSTER_FINISHED" -> {
-                val type = object : TypeToken<CoinBoosterFinishedDto>() {}.type
-                val payload: CoinBoosterFinishedDto = gson.fromJson(
-                    gson.toJson(event.payload), type
+                val dto: CoinBoosterFinishedDto = gson.fromJson(
+                    gson.toJson(event.payload), CoinBoosterFinishedDto::class.java
                 )
-                GameSessionSocketEvent.CoinBoosterFinished(payload)
+                GameSessionSocketEvent.CoinBoosterFinished(dto)
             }
 
             "GAME_FINISHED" -> {
                 val type = object : TypeToken<List<GameResultDto>>() {}.type
-                val results: List<GameResultDto> = gson.fromJson(
-                    gson.toJson(event.payload), type
-                )
+                val results: List<GameResultDto> = gson.fromJson(gson.toJson(event.payload), type)
                 GameSessionSocketEvent.GameFinished(results)
             }
 
-            "BOARD_PHASE_STARTING" -> {
-                val payload: BoardPhaseStartingDto = gson.fromJson(
-                    gson.toJson(event.payload),
-                    BoardPhaseStartingDto::class.java
+            "BOARD_PHASE_STARTING", "NEXT_PLAYER" -> {
+                val dto: BoardPhaseStartingDto = gson.fromJson(
+                    gson.toJson(event.payload), BoardPhaseStartingDto::class.java
                 )
-                GameSessionSocketEvent.BoardPhaseStarting(payload)
-            }
-
-            "CURRENT_PLAYER_INFO" -> {
-                val payload: CurrentPlayerInfoDto = gson.fromJson(
-                    gson.toJson(event.payload),
-                    CurrentPlayerInfoDto::class.java
-                )
-                GameSessionSocketEvent.CurrentPlayerInfo(payload)
+                GameSessionSocketEvent.BoardPhaseStarting(dto)
             }
 
             "MONEY_OFFER" -> {
-                val payload: MoneyOfferDto = gson.fromJson(
-                    gson.toJson(event.payload),
-                    MoneyOfferDto::class.java
+                val dto: MoneyOfferDto = gson.fromJson(
+                    gson.toJson(event.payload), MoneyOfferDto::class.java
                 )
-                GameSessionSocketEvent.MoneyOffer(payload)
+                GameSessionSocketEvent.MoneyOffer(dto)
             }
 
-            "MONEY_OFFER_ACCEPTED" -> {
-                val payload: MoneyOfferAcceptedDto = gson.fromJson(
-                    gson.toJson(event.payload),
-                    MoneyOfferAcceptedDto::class.java
+            "NEW_BOARD_QUESTION",
+            "PLAYER_ANSWERED_BOARD_QUESTION_RES",
+            "HUNTER_ANSWERED_BOARD_QUESTION_RES"-> {
+                val dto: PlayerVHunterBoardStateDto = gson.fromJson(
+                    gson.toJson(event.payload), PlayerVHunterBoardStateDto::class.java
                 )
-                GameSessionSocketEvent.MoneyOfferAccepted(payload)
+                // MONEY_OFFER_ACCEPTED also carries MoneyOfferAcceptedDto but we only
+                // need the board state for the screen — emit as BoardQuestionUpdate
+                GameSessionSocketEvent.BoardQuestionUpdate(dto)
+            }
+
+            "MONEY_OFFER_ACCEPTED"-> {
+                val dto: PlayerVHunterBoardStateDto = gson.fromJson(
+                    gson.toJson(event.payload), PlayerVHunterBoardStateDto::class.java
+                )
+                // MONEY_OFFER_ACCEPTED also carries MoneyOfferAcceptedDto but we only
+                // need the board state for the screen — emit as BoardQuestionUpdate
+                GameSessionSocketEvent.MoneyOfferAccepted(dto)
+            }
+
+            "BOARD_QUESTION_REVEAL" -> {
+                val dto: PlayerVHunterBoardStateDto = gson.fromJson(
+                    gson.toJson(event.payload), PlayerVHunterBoardStateDto::class.java
+                )
+                // MONEY_OFFER_ACCEPTED also carries MoneyOfferAcceptedDto but we only
+                // need the board state for the screen — emit as BoardQuestionUpdate
+                GameSessionSocketEvent.AnswerRevealed(dto)
+            }
+
+            "PLAYER_WON" -> {
+                val dto: PlayerVHunterGlobalStateDto = gson.fromJson(
+                    gson.toJson(event.payload), PlayerVHunterGlobalStateDto::class.java
+                )
+                GameSessionSocketEvent.PlayerWon(dto)
+            }
+
+            "PLAYER_CAUGHT" -> {
+                val dto: PlayerVHunterGlobalStateDto = gson.fromJson(
+                    gson.toJson(event.payload), PlayerVHunterGlobalStateDto::class.java
+                )
+                GameSessionSocketEvent.PlayerCaught(dto)
+            }
+
+            "BOARD_PHASE_FINISHED" -> {
+                val dto: PlayerVHunterGlobalStateDto = gson.fromJson(
+                    gson.toJson(event.payload), PlayerVHunterGlobalStateDto::class.java
+                )
+                GameSessionSocketEvent.BoardPhaseFinished(dto)
             }
 
             else -> {
-                Log.w("GameSessionSocket", "Unknown event type: ${event.type}")
+                Log.w(TAG, "Unknown event type: ${event.type}")
                 return
             }
         }
 
-        CoroutineScope(Dispatchers.IO).launch {
-            _events.emit(socketEvent)
-        }
+        CoroutineScope(Dispatchers.IO).launch { _events.emit(socketEvent) }
     }
 
     private fun handlePrivateMessage(event: GameSessionEventDto) {
@@ -190,70 +217,42 @@ class GameSessionSocketService @Inject constructor() {
 
     // ── Send messages to server ──────────────────────────────────────────────
 
-    // called when Game screen opens
-    fun sendConnect(gameSessionId: String) {
-        stompClient?.send("/app/game-session/$gameSessionId/connect", "{}")
-            ?.subscribeOn(Schedulers.io())
-            ?.subscribe(
-                { Log.d("GameSessionSocket", "Connect sent") },
-                { Log.e("GameSessionSocket", "Failed to send connect: ${it.message}") }
-            )
-            ?.also { compositeDisposable.add(it) }
-    }
-
-    // called when player finishes all questions
-    fun sendFinish(gameSessionId: String, correctAnswers: Int) {
-        val payload = gson.toJson(mapOf("correctAnswers" to correctAnswers))
-        stompClient?.send("/app/game-session/$gameSessionId/finish-coin-booster", payload)
-            ?.subscribeOn(Schedulers.io())
-            ?.subscribe(
-                { Log.d("GameSessionSocket", "Finish sent: correctAnswers=$correctAnswers") },
-                { Log.e("GameSessionSocket", "Failed to send finish: ${it.message}") }
-            )
-            ?.also { compositeDisposable.add(it) }
-    }
-
-    fun sendPlayerInfoRequest(gameSessionId: String) {
-        stompClient?.send("/app/game-session/$gameSessionId/player-info-request", "{}")
-            ?.subscribeOn(Schedulers.io())
-            ?.subscribe(
-                { Log.d(TAG, "PlayerInfoRequest sent") },
-                { Log.e(TAG, "Failed to send PlayerInfoRequest: ${it.message}") }
-            )
-            ?.also { compositeDisposable.add(it) }
-    }
-
     fun sendMoneyOffer(gameSessionId: String, higherOffer: Float, lowerOffer: Float) {
-        val payload = gson.toJson(mapOf(
-            "higherOffer" to higherOffer,
-            "lowerOffer"  to lowerOffer
-        ))
-        stompClient?.send("/app/game-session/$gameSessionId/money-offer-request", payload)
-            ?.subscribeOn(Schedulers.io())
-            ?.subscribe(
-                { Log.d(TAG, "MoneyOffer sent: higher=$higherOffer lower=$lowerOffer") },
-                { Log.e(TAG, "Failed to send MoneyOffer: ${it.message}") }
-            )
-            ?.also { compositeDisposable.add(it) }
+        val payload = gson.toJson(MoneyOfferPayload(higherOffer, lowerOffer))
+        send(gameSessionId, "money-offer-request", payload)
     }
 
     fun sendMoneyOfferResponse(gameSessionId: String, acceptedOffer: Float) {
-        val payload = gson.toJson(mapOf("offerAccepted" to acceptedOffer))
-        stompClient?.send("/app/game-session/$gameSessionId/money-offer-response", payload)
-            ?.subscribeOn(Schedulers.io())
-            ?.subscribe(
-                { Log.d(TAG, "MoneyOfferResponse sent: accepted=$acceptedOffer") },
-                { Log.e(TAG, "Failed to send MoneyOfferResponse: ${it.message}") }
-            )
-            ?.also { compositeDisposable.add(it) }
+        val payload = gson.toJson(MoneyOfferResponsePayload(acceptedOffer))
+        send(gameSessionId, "money-offer-response", payload)
+    }
+
+    fun sendBoardAnswer(gameSessionId: String, answer: String, isHunter: Boolean) {
+        val payload = gson.toJson(BoardAnswerPayload(answer))
+        val endpoint = if (isHunter) "hunter-answer-board-question" else "player-answer-board-question"
+        send(gameSessionId, endpoint, payload)
     }
 
     fun sendStartBoardQuestions(gameSessionId: String) {
-        stompClient?.send("/app/game-session/$gameSessionId/start-board-phase", "{}")
+        send(gameSessionId, "start-board-phase", "{}")
+    }
+
+    fun sendFinish(gameSessionId: String, correctAnswers: Int) {
+        val payload = gson.toJson(FinishCoinBoosterPayload(correctAnswers))
+        send(gameSessionId, "finish-coin-booster", payload)
+    }
+
+    fun sendConnect(gameSessionId: String) {
+        send(gameSessionId, "connect", "{}")
+    }
+
+    // ── private helper ────────────────────────────────────────────────────────────
+    private fun send(gameSessionId: String, endpoint: String, payload: String) {
+        stompClient?.send("/app/game-session/$gameSessionId/$endpoint", payload)
             ?.subscribeOn(Schedulers.io())
             ?.subscribe(
-                { Log.d(TAG, "StartBoardPhase sent") },
-                { Log.e(TAG, "Failed to send StartBoardPhase: ${it.message}") }
+                { Log.d(TAG, "$endpoint sent") },
+                { Log.e(TAG, "Failed to send $endpoint: ${it.message}") }
             )
             ?.also { compositeDisposable.add(it) }
     }
@@ -273,10 +272,36 @@ data class AnswerPayload(
 
 // ── DTOs ─────────────────────────────────────────────────────────────────────
 
-data class GameSessionEventDto(
-    val type: String,
-    val payload: Any
+data class CurrentPlayerInfoDto(
+    val playerId: Long,
+    val correctAnswers: Int,
+    val coinsEarned: Int
 )
+
+
+// ── Events ───────────────────────────────────────────────────────────────────
+
+sealed class GameSessionSocketEvent {
+    data class CoinBoosterStarted(val payload: CoinBoosterStartPayload) : GameSessionSocketEvent()
+    data class CoinBoosterFinished(val payload: CoinBoosterFinishedDto) : GameSessionSocketEvent()
+    data class GameFinished(val results: List<GameResultDto>) : GameSessionSocketEvent()
+    data class PlayerLeft(val playerId: Long) : GameSessionSocketEvent()
+
+    // board phase — BOARD_PHASE_STARTING and NEXT_PLAYER share same shape
+    data class BoardPhaseStarting(val dto: BoardPhaseStartingDto) : GameSessionSocketEvent()
+    data class MoneyOffer(val dto: MoneyOfferDto) : GameSessionSocketEvent()
+    data class MoneyOfferAccepted(val dto: PlayerVHunterBoardStateDto) : GameSessionSocketEvent()
+    data class BoardQuestionUpdate(val dto: PlayerVHunterBoardStateDto) : GameSessionSocketEvent()
+    data class AnswerRevealed(val dto: PlayerVHunterBoardStateDto) : GameSessionSocketEvent()
+    data class PlayerWon(val dto: PlayerVHunterGlobalStateDto) : GameSessionSocketEvent()
+    data class PlayerCaught(val dto: PlayerVHunterGlobalStateDto) : GameSessionSocketEvent()
+    data class BoardPhaseFinished(val dto: PlayerVHunterGlobalStateDto) : GameSessionSocketEvent()
+}
+
+
+// ── Received from server (Dto) ────────────────────────────────────────────
+
+data class GameSessionEventDto(val type: String, val payload: Any)
 
 data class CoinBoosterStartPayload(
     val playerState: CoinBoosterPlayerStateDto,
@@ -292,27 +317,60 @@ data class CoinBoosterPlayerStateDto(
     val isFinished: Boolean
 )
 
+data class PlayerPlayingInfo(
+    val playerId: Long,
+    val username: String,
+)
+
 data class CoinBoosterQuestionDto(
     val question: String,
     val answer: String,
     val aliases: List<String>
 )
 
-data class BoardPhaseStartingDto(
-    val hunterId: Long,
-    val currentPlayerId: Long,
-    val playersFinishStatus: Map<Long, Float>
+data class CoinBoosterFinishedDto(
+    val playerId: Long,
+    val username: String,
+    val correctAnswers: Int
 )
 
-data class CurrentPlayerInfoDto(
+data class GameResultDto(
     val playerId: Long,
-    val correctAnswers: Int,
-    val coinsEarned: Int
+    val correctAnswers: Int
+)
+
+// board phase — now matches BoardPhaseStartingPayload(globalState, boardState)
+data class BoardPhaseStartingDto(
+    val globalState: PlayerVHunterGlobalStateDto,
+    val boardState: PlayerVHunterBoardStateDto
+)
+
+data class PlayerVHunterGlobalStateDto(
+    val hunterId: Long,
+    val currentPlayerId: Long,
+    val playersFinishStatus: Map<Long, Float>,
+    val players: Map<Long, String>
+)
+
+data class PlayerVHunterBoardStateDto(
+    val questionsStarted: Boolean,
+    val boardQuestion: BoardQuestionDto?,
+    val hunterAnswer: String?,
+    val playerAnswer: String?,
+    val hunterCorrectAnswers: Int,
+    val playerCorrectAnswers: Int,
+    val playerStartingIndex: Int,
+    val moneyInGame: Float,
+    val boardPhase: String  // maps to BoardPhase enum
+)
+
+data class BoardQuestionDto(
+    val question: String,
+    val choices: List<String>,
+    val correctAnswer: String
 )
 
 data class MoneyOfferDto(
-    val currentPlayerId: Long,
-    val hunterId: Long,
     val higherOffer: Float,
     val lowerOffer: Float
 )
@@ -323,22 +381,16 @@ data class MoneyOfferAcceptedDto(
     val playerStartingIndex: Int
 )
 
-// ── Events ───────────────────────────────────────────────────────────────────
+data class PlayerWonDto(val playerId: Long, val moneyWon: Float)
+data class PlayerCaughtDto(val playerId: Long)
+data class NextPlayerDto(
+    val globalState: PlayerVHunterGlobalStateDto,
+    val boardState: PlayerVHunterBoardStateDto
+)
 
-sealed class GameSessionSocketEvent {
-    data class CoinBoosterStarted(val payload: CoinBoosterStartPayload) :
-        GameSessionSocketEvent()
-    data class CoinBoosterFinished(val payload: CoinBoosterFinishedDto) : GameSessionSocketEvent()
-    data class GameFinished(val results: List<GameResultDto>) : GameSessionSocketEvent()
-    data class PlayerLeft(val playerId: Long) : GameSessionSocketEvent()
+// ── Sent to server (Payload) ──────────────────────────────────────────────
 
-    // board phase
-    data class BoardPhaseStarting(val state: BoardPhaseStartingDto) : GameSessionSocketEvent()
-    data class CurrentPlayerInfo(val info: CurrentPlayerInfoDto) : GameSessionSocketEvent()
-    data class MoneyOffer(val offer: MoneyOfferDto) : GameSessionSocketEvent()
-    data class MoneyOfferAccepted(val data: MoneyOfferAcceptedDto) : GameSessionSocketEvent()
-
-}
-
-data class CoinBoosterFinishedDto(val playerId: Long,val username: String, val correctAnswers: Int)
-data class GameResultDto(val playerId: Long, val correctAnswers: Int)
+data class MoneyOfferPayload(val higherOffer: Float, val lowerOffer: Float)
+data class MoneyOfferResponsePayload(val offerAccepted: Float)
+data class BoardAnswerPayload(val answer: String)
+data class FinishCoinBoosterPayload(val correctAnswers: Int)

@@ -12,4 +12,6 @@ public class PlayerVHunterGlobalState {
     Long currentPlayerId;
     //playerId + money earned -> -1 if hunted by hunter
     Map<Long, Float> playersFinishStatus;
+    //playerId + username
+    Map<Long, String> players;
 }

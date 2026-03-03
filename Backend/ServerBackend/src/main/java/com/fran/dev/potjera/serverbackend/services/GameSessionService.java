@@ -4,6 +4,7 @@ import com.fran.dev.potjera.potjeradb.enums.GameStage;
 import com.fran.dev.potjera.potjeradb.models.playmode.GameSession;
 import com.fran.dev.potjera.potjeradb.models.playmode.Room;
 import com.fran.dev.potjera.potjeradb.repositories.GameSessionRepository;
+import com.fran.dev.potjera.potjeradb.repositories.MultipleChoiceQuestionRepository;
 import com.fran.dev.potjera.potjeradb.repositories.QuickFireQuestionRepository;
 import com.fran.dev.potjera.potjeradb.repositories.RoomRepository;
 import com.fran.dev.potjera.serverbackend.models.gamesession.GameSessionEvent;
@@ -11,10 +12,7 @@ import com.fran.dev.potjera.serverbackend.models.gamesession.GameSessionStage;
 import com.fran.dev.potjera.serverbackend.models.gamesession.GameSessionState;
 import com.fran.dev.potjera.serverbackend.models.gamesession.coinbooster.CoinBoosterPlayerState;
 import com.fran.dev.potjera.serverbackend.models.gamesession.coinbooster.CoinBoosterQuestion;
-import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.CurrentPlayerInfoPayload;
-import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.MoneyOfferRequestPayload;
-import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.PlayerVHunterBoardState;
-import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.PlayerVHunterGlobalState;
+import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.*;
 import com.fran.dev.potjera.serverbackend.models.room.websocket.GameStartingPayload;
 import com.fran.dev.potjera.serverbackend.models.room.websocket.RoomEvent;
 import jakarta.persistence.EntityNotFoundException;
@@ -27,10 +25,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -42,6 +39,7 @@ public class GameSessionService {
     private final GameSessionRepository gameSessionRepository;
     private final RoomRepository roomRepository;
     private final QuickFireQuestionRepository quickFireQuestionRepository;
+    private final MultipleChoiceQuestionRepository multipleChoiceQuestionRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final GameSessionManager gameSessionManager;
 
@@ -61,7 +59,7 @@ public class GameSessionService {
 
                             if (!rp.isHunter()) {
                                 List<CoinBoosterQuestion> questions =
-                                        quickFireQuestionRepository.findRandomQuestions(10)
+                                        quickFireQuestionRepository.findRandomQuestions(4)
                                                 .stream()
                                                 .map(qfq -> CoinBoosterQuestion.builder()
                                                         .aliases(qfq.getAliases())
@@ -206,67 +204,56 @@ public class GameSessionService {
                         p -> 0f
                 ));
 
-        PlayerVHunterGlobalState boardState = PlayerVHunterGlobalState.builder()
+        logger.info("Starting board phase for players {}", playersFinishStatus.keySet());
+
+        Map<Long, String> players = nonHunterPlayers.stream()
+                .collect(Collectors.toMap(
+                        CoinBoosterPlayerState::getPlayerId,
+                        CoinBoosterPlayerState::getPlayerName
+                ));
+
+        // ── Global state — who is playing, who is hunter, finish status ───────────
+        PlayerVHunterGlobalState globalState = PlayerVHunterGlobalState.builder()
                 .hunterId(hunterId)
                 .currentPlayerId(firstPlayerId)
                 .playersFinishStatus(playersFinishStatus)
+                .players(players)
                 .build();
 
+        // ── Per-player board state — default phase HUNTER_MAKING_OFFER ───────────
         Map<Long, PlayerVHunterBoardState> playerBoardStates = nonHunterPlayers.stream()
                 .collect(Collectors.toMap(
                         CoinBoosterPlayerState::getPlayerId,
                         p -> PlayerVHunterBoardState.builder()
+                                .questionsStarted(false)
                                 .hunterCorrectAnswers(0)
                                 .playerCorrectAnswers(0)
                                 .playerStartingIndex(2)
                                 .moneyInGame(p.getCorrectAnswers() * 500f)
+                                .boardPhase(BoardPhase.HUNTER_MAKING_OFFER)  // ← default phase
                                 .build()
                 ));
 
-        session.setPlayerVHunterGlobalState(boardState);
+        session.setPlayerVHunterGlobalState(globalState);
         session.setPlayerBoardStates(playerBoardStates);
         session.setGameSessionStage(GameSessionStage.PLAYERS_V_HUNTER);
         gameSessionManager.saveGameSession(session);
 
-        messagingTemplate.convertAndSend(
-                "/topic/game-session/" + gameSessionId,
-                new GameSessionEvent("BOARD_PHASE_STARTING", boardState)
+        // ── Build broadcast payload — global state + first player's board state ──
+        PlayerVHunterBoardState firstPlayerBoardState = playerBoardStates.get(firstPlayerId);
+
+        BoardPhaseStartingPayload payload = new BoardPhaseStartingPayload(
+                globalState,
+                firstPlayerBoardState
         );
 
-        logger.info("Board phase started for session {} — first player: {}, hunter: {}",
+        messagingTemplate.convertAndSend(
+                "/topic/game-session/" + gameSessionId,
+                new GameSessionEvent("BOARD_PHASE_STARTING", payload)
+        );
+
+        logger.info("Board phase started for session {} — firstPlayer: {}, hunter: {}",
                 gameSessionId, firstPlayerId, hunterId);
-    }
-
-    public void sendCurrentPlayerInfo(String gameSessionId, Long hunterId) {
-        GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
-
-        if (session == null) {
-            throw new EntityNotFoundException("Game session not found: " + gameSessionId);
-        }
-
-        PlayerVHunterGlobalState boardState = session.getPlayerVHunterGlobalState();
-
-        CoinBoosterPlayerState currentPlayer = session.getCoinBoosterPlayerStates()
-                .get(boardState.getCurrentPlayerId());
-
-        if (currentPlayer == null) {
-            throw new EntityNotFoundException("Current player not found in session");
-        }
-
-        CurrentPlayerInfoPayload payload = new CurrentPlayerInfoPayload(
-                currentPlayer.getPlayerId(),
-                currentPlayer.getCorrectAnswers(),
-                currentPlayer.getCorrectAnswers() * 500  // coins earned
-        );
-
-        messagingTemplate.convertAndSend(
-                "/topic/game-session/" + gameSessionId,
-                new GameSessionEvent("CURRENT_PLAYER_INFO", payload)
-        );
-
-        logger.info("Sent player info for player {} to session {} — correctAnswers: {}, coins: {}",
-                currentPlayer.getPlayerId(), gameSessionId,
-                currentPlayer.getCorrectAnswers(), currentPlayer.getCorrectAnswers() * 500);
     }
 
     public void broadcastMoneyOffer(String gameSessionId, Long hunterId, MoneyOfferRequestPayload offer) {
@@ -283,16 +270,6 @@ public class GameSessionService {
         }
 
         Long currentPlayerId = boardState.getCurrentPlayerId();
-
-        // store offer in current player's board state
-        PlayerVHunterBoardState playerBoardState = session.getPlayerBoardStates().get(currentPlayerId);
-
-        if (playerBoardState == null) {
-            throw new EntityNotFoundException("Board state not found for player: " + currentPlayerId);
-        }
-
-        session.getPlayerBoardStates().put(currentPlayerId, playerBoardState);
-        gameSessionManager.saveGameSession(session);
 
         MoneyOfferRequestPayload broadcastPayload = new MoneyOfferRequestPayload(
                 offer.higherOffer(),
@@ -315,9 +292,9 @@ public class GameSessionService {
             throw new EntityNotFoundException("Game session not found: " + gameSessionId);
         }
 
-        PlayerVHunterGlobalState boardState = session.getPlayerVHunterGlobalState();
+        PlayerVHunterGlobalState globalState = session.getPlayerVHunterGlobalState();
 
-        if (!boardState.getCurrentPlayerId().equals(playerId)) {
+        if (!globalState.getCurrentPlayerId().equals(playerId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "It's not your turn");
         }
 
@@ -327,31 +304,381 @@ public class GameSessionService {
             throw new EntityNotFoundException("Board state not found for player: " + playerId);
         }
 
-        CoinBoosterPlayerState coinBoosterState = session.getCoinBoosterPlayerStates().get(playerId);
-        int correctAnswers = coinBoosterState.getCorrectAnswers();
-        float moneyEarned  = correctAnswers * 500f;
+        float moneyEarned = playerBoardState.getMoneyInGame();
 
-        if (acceptedOffer > moneyEarned) {
-            playerBoardState.setPlayerStartingIndex(1);
-        } else {
+        if (acceptedOffer < moneyEarned) {
             playerBoardState.setPlayerStartingIndex(3);
+        } else if (acceptedOffer > moneyEarned) {
+            playerBoardState.setPlayerStartingIndex(1);
+        }else{
+            playerBoardState.setPlayerStartingIndex(2);
         }
 
         playerBoardState.setMoneyInGame(acceptedOffer);
+        playerBoardState.setBoardPhase(BoardPhase.OFFER_ACCEPTED);  // ← phase drives Android UI
+
         session.getPlayerBoardStates().put(playerId, playerBoardState);
         gameSessionManager.saveGameSession(session);
 
+        // broadcast full board state — Android derives everything from boardPhase
         messagingTemplate.convertAndSend(
                 "/topic/game-session/" + gameSessionId,
-                new GameSessionEvent("MONEY_OFFER_ACCEPTED", Map.of(
-                        "playerId",            playerId,
-                        "acceptedOffer",       acceptedOffer,
-                        "playerStartingIndex", playerBoardState.getPlayerStartingIndex()
-                ))
+                new GameSessionEvent("MONEY_OFFER_ACCEPTED", playerBoardState)
         );
 
         logger.info("Player {} accepted offer {} — startingIndex: {}, session: {}",
                 playerId, acceptedOffer, playerBoardState.getPlayerStartingIndex(), gameSessionId);
+
+        CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS).execute(() ->
+                startBoardSession(gameSessionId, playerId)
+        );
+    }
+
+    public void startBoardSession(String gameSessionId, Long currentPlayerId) {
+        GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
+
+        if (session == null) {
+            logger.warn("startBoardSession: session not found {}", gameSessionId);
+            return;
+        }
+
+        PlayerVHunterBoardState playerBoardState = session.getPlayerBoardStates().get(currentPlayerId);
+
+        if (playerBoardState == null) {
+            logger.warn("startBoardSession: board state not found for player {}", currentPlayerId);
+            return;
+        }
+
+        // fetch + convert questions
+        List<BoardQuestion> questions = multipleChoiceQuestionRepository.findRandomQuestions(7)
+                .stream()
+                .map(BoardQuestion::from)
+                .toList();
+
+        if (questions.isEmpty()) {
+            logger.error("startBoardSession: no board questions found in db");
+            return;
+        }
+
+        // store questions separately — not in broadcast payload
+        gameSessionManager.saveBoardQuestions(gameSessionId, currentPlayerId, questions);
+
+        // build board state with only first question
+        playerBoardState.setQuestionsStarted(true);
+        playerBoardState.setCurrentQuestionIndex(0);
+        playerBoardState.setHunterCorrectAnswers(0);
+        playerBoardState.setPlayerCorrectAnswers(0);
+        playerBoardState.setHunterAnswer(null);
+        playerBoardState.setPlayerAnswer(null);
+        playerBoardState.setBoardQuestion(questions.getFirst());
+        playerBoardState.setBoardPhase(BoardPhase.QUESTION_READING);
+
+        session.getPlayerBoardStates().put(currentPlayerId, playerBoardState);
+        gameSessionManager.saveGameSession(session);
+
+        messagingTemplate.convertAndSend(
+                "/topic/game-session/" + gameSessionId,
+                new GameSessionEvent("NEW_BOARD_QUESTION", playerBoardState)
+        );
+
+        logger.info("startBoardSession: first question sent for player {} in session {}",
+                currentPlayerId, gameSessionId);
+    }
+
+    public void handleBoardAnswer(String gameSessionId, Long userId, String answer, boolean isHunter) {
+        GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
+
+        if (session == null) throw new EntityNotFoundException("Session not found");
+
+        PlayerVHunterGlobalState globalState = session.getPlayerVHunterGlobalState();
+        Long currentPlayerId = globalState.getCurrentPlayerId();
+
+        if (!globalState.getCurrentPlayerId().equals(userId) && !isHunter) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "It's not your turn");
+        }
+
+        PlayerVHunterBoardState playerBoardState = session.getPlayerBoardStates().get(currentPlayerId);
+
+        if (playerBoardState == null) throw new EntityNotFoundException("Board state not found");
+
+        // record answer
+        if (isHunter) {
+            playerBoardState.setHunterAnswer(answer);
+        } else {
+            playerBoardState.setPlayerAnswer(answer);
+        }
+
+        playerBoardState.setBoardPhase(BoardPhase.ANSWER_GIVEN);
+
+        String eventType = isHunter
+                ? "HUNTER_ANSWERED_BOARD_QUESTION_RES"
+                : "PLAYER_ANSWERED_BOARD_QUESTION_RES";
+
+        session.getPlayerBoardStates().put(currentPlayerId, playerBoardState);
+        gameSessionManager.saveGameSession(session);
+
+        // broadcast partial state — other player sees the indicator
+        messagingTemplate.convertAndSend(
+                "/topic/game-session/" + gameSessionId,
+                new GameSessionEvent(eventType, playerBoardState)
+        );
+
+        // if both answered → trigger reveal after 2s
+        boolean bothAnswered = playerBoardState.getHunterAnswer() != null
+                && playerBoardState.getPlayerAnswer() != null;
+
+        if (bothAnswered) {
+            CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS).execute(() ->
+                    revealBoardAnswer(gameSessionId, currentPlayerId)
+            );
+        }
+
+        logger.info("handleBoardAnswer: {} answered '{}' for player {} in session {}",
+                isHunter ? "hunter" : "player", answer, currentPlayerId, gameSessionId);
+    }
+
+    public void revealBoardAnswer(String gameSessionId, Long currentPlayerId) {
+        GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
+        if (session == null) return;
+
+        PlayerVHunterBoardState playerBoardState = session.getPlayerBoardStates().get(currentPlayerId);
+        if (playerBoardState == null) return;
+
+        BoardQuestion currentQuestion = playerBoardState.getBoardQuestion();
+        String correct = currentQuestion.correctAnswer();
+
+        boolean playerCorrect = correct.equals(playerBoardState.getPlayerAnswer());
+        boolean hunterCorrect = correct.equals(playerBoardState.getHunterAnswer());
+
+        if (playerCorrect) {
+            playerBoardState.setPlayerCorrectAnswers(playerBoardState.getPlayerCorrectAnswers() + 1);
+        }
+        if (hunterCorrect) {
+            playerBoardState.setHunterCorrectAnswers(playerBoardState.getHunterCorrectAnswers() + 1);
+        }
+
+        playerBoardState.setBoardPhase(BoardPhase.ANSWER_REVEAL);
+        session.getPlayerBoardStates().put(currentPlayerId, playerBoardState);
+        gameSessionManager.saveGameSession(session);
+
+        messagingTemplate.convertAndSend(
+                "/topic/game-session/" + gameSessionId,
+                new GameSessionEvent("BOARD_QUESTION_REVEAL", playerBoardState)
+        );
+
+        // check win/lose conditions after reveal
+        int playerPosition = playerBoardState.getPlayerStartingIndex()
+                + playerBoardState.getPlayerCorrectAnswers();
+        int hunterPosition = playerBoardState.getHunterCorrectAnswers() - 1;
+
+        if (playerPosition > 6) {
+            // ── Player won ────────────────────────────────────────────────────────
+            logger.info("revealBoardAnswer: player {} WON in session {}", currentPlayerId, gameSessionId);
+            CompletableFuture.delayedExecutor(3500, TimeUnit.MILLISECONDS).execute(() ->
+                    handlePlayerWon(gameSessionId, currentPlayerId)
+            );
+        } else if (hunterPosition >= playerPosition) {
+            // ── Hunter caught player ──────────────────────────────────────────────
+            logger.info("revealBoardAnswer: player {} CAUGHT by hunter in session {}", currentPlayerId, gameSessionId);
+            CompletableFuture.delayedExecutor(3500, TimeUnit.MILLISECONDS).execute(() ->
+                    handlePlayerCaught(gameSessionId, currentPlayerId)
+            );
+        } else {
+            // ── Continue — next question ──────────────────────────────────────────
+            CompletableFuture.delayedExecutor(3500, TimeUnit.MILLISECONDS).execute(() ->
+                    advanceBoardQuestion(gameSessionId, currentPlayerId)
+            );
+        }
+    }
+
+    public void advanceBoardQuestion(String gameSessionId, Long currentPlayerId) {
+        GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
+        if (session == null) return;
+
+        PlayerVHunterBoardState playerBoardState = session.getPlayerBoardStates().get(currentPlayerId);
+        if (playerBoardState == null) return;
+
+        List<BoardQuestion> questions = gameSessionManager.getBoardQuestions(gameSessionId, currentPlayerId);
+        int nextIndex = playerBoardState.getCurrentQuestionIndex() + 1;
+
+        if (nextIndex >= questions.size()) {
+            logger.info("advanceBoardQuestion: out of questions for player {} — fetching 3 more", currentPlayerId);
+
+            // fetch 3 more questions, excluding already used ones to avoid repeats
+            List<String> usedQuestions = questions.stream()
+                    .map(BoardQuestion::question)
+                    .toList();
+
+            List<BoardQuestion> newQuestions = multipleChoiceQuestionRepository
+                    .findRandomQuestionsExcluding(3, usedQuestions)
+                    .stream()
+                    .map(BoardQuestion::from)
+                    .toList();
+
+            if (newQuestions.isEmpty()) {
+                logger.warn("advanceBoardQuestion: all questions exhausted, recycling from full pool");
+                newQuestions = multipleChoiceQuestionRepository.findRandomQuestions(3)
+                        .stream()
+                        .map(BoardQuestion::from)
+                        .toList();
+            }
+
+            // append new questions to existing list
+            List<BoardQuestion> extended = new ArrayList<>(questions);
+            extended.addAll(newQuestions);
+            gameSessionManager.saveBoardQuestions(gameSessionId, currentPlayerId, extended);
+
+            logger.info("advanceBoardQuestion: fetched {} more questions, total now {}",
+                    newQuestions.size(), extended.size());
+        }
+
+        // re-fetch in case we just extended
+        List<BoardQuestion> updatedQuestions = gameSessionManager.getBoardQuestions(gameSessionId, currentPlayerId);
+
+        playerBoardState.setCurrentQuestionIndex(nextIndex);
+        playerBoardState.setBoardQuestion(updatedQuestions.get(nextIndex));
+        playerBoardState.setHunterAnswer(null);
+        playerBoardState.setPlayerAnswer(null);
+        playerBoardState.setBoardPhase(BoardPhase.QUESTION_READING);
+
+        session.getPlayerBoardStates().put(currentPlayerId, playerBoardState);
+        gameSessionManager.saveGameSession(session);
+
+        messagingTemplate.convertAndSend(
+                "/topic/game-session/" + gameSessionId,
+                new GameSessionEvent("NEW_BOARD_QUESTION", playerBoardState)
+        );
+
+        logger.info("advanceBoardQuestion: question {} sent for player {} in session {}",
+                nextIndex, currentPlayerId, gameSessionId);
+    }
+
+    private void handlePlayerWon(String gameSessionId, Long currentPlayerId) {
+        GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
+        if (session == null) return;
+
+        PlayerVHunterGlobalState globalState = session.getPlayerVHunterGlobalState();
+        PlayerVHunterBoardState boardState = session.getPlayerBoardStates().get(currentPlayerId);
+
+        // record win — save money earned
+        float moneyWon = boardState.getMoneyInGame();
+        globalState.getPlayersFinishStatus().put(currentPlayerId, moneyWon);
+
+        session.setPlayerVHunterGlobalState(globalState);
+        gameSessionManager.saveGameSession(session);
+
+        logger.info("handlePlayerWon: player {} won {} coins in session {}",
+                currentPlayerId, moneyWon, gameSessionId);
+
+        messagingTemplate.convertAndSend(
+                "/topic/game-session/" + gameSessionId,
+                new GameSessionEvent("PLAYER_WON", globalState)
+        );
+
+        // move to next player after short delay
+        CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS).execute(() ->
+                moveToNextPlayer(gameSessionId, globalState)
+        );
+    }
+
+    private void handlePlayerCaught(String gameSessionId, Long currentPlayerId) {
+        GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
+        if (session == null) return;
+
+        PlayerVHunterGlobalState globalState = session.getPlayerVHunterGlobalState();
+
+        // record loss — -1 means caught
+        globalState.getPlayersFinishStatus().put(currentPlayerId, -1f);
+        session.setPlayerVHunterGlobalState(globalState);
+        gameSessionManager.saveGameSession(session);
+
+        logger.info("handlePlayerCaught: player {} caught by hunter in session {}",
+                currentPlayerId, gameSessionId);
+
+        messagingTemplate.convertAndSend(
+                "/topic/game-session/" + gameSessionId,
+                new GameSessionEvent("PLAYER_CAUGHT", globalState)
+        );
+
+        // move to next player after short delay
+        CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS).execute(() ->
+                moveToNextPlayer(gameSessionId, globalState)
+        );
+    }
+
+    private void moveToNextPlayer(String gameSessionId, PlayerVHunterGlobalState globalState) {
+        GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
+        if (session == null) return;
+
+        Map<Long, Float> finishStatus = globalState.getPlayersFinishStatus();
+
+        logger.info("players left: {}",finishStatus.size());
+
+        Optional<Long> nextPlayer = finishStatus.entrySet().stream()
+                .filter(e -> e.getValue() == 0f)
+                .map(Map.Entry::getKey)
+                .findFirst();
+
+        logger.info("nextPlayer: {}", nextPlayer);
+
+        if (nextPlayer.isEmpty()) {
+            endBoardPhase(gameSessionId);
+            return;
+        }
+
+        Long nextPlayerId = nextPlayer.get();
+        globalState.setCurrentPlayerId(nextPlayerId);
+
+        // reset board state for next player to HUNTER_MAKING_OFFER
+        PlayerVHunterBoardState nextBoardState = session.getPlayerBoardStates().get(nextPlayerId);
+        nextBoardState.setBoardPhase(BoardPhase.HUNTER_MAKING_OFFER);
+        nextBoardState.setHunterAnswer(null);
+        nextBoardState.setPlayerAnswer(null);
+        nextBoardState.setBoardQuestion(null);
+        nextBoardState.setQuestionsStarted(false);
+        nextBoardState.setHunterCorrectAnswers(0);
+        nextBoardState.setPlayerCorrectAnswers(0);
+        session.getPlayerBoardStates().put(nextPlayerId, nextBoardState);
+        gameSessionManager.saveGameSession(session);
+
+        // same payload shape as BOARD_PHASE_STARTING
+        BoardPhaseStartingPayload payload = new BoardPhaseStartingPayload(
+                globalState,
+                nextBoardState
+        );
+
+        messagingTemplate.convertAndSend(
+                "/topic/game-session/" + gameSessionId,
+                new GameSessionEvent("NEXT_PLAYER", payload)
+        );
+
+        logger.info("moveToNextPlayer: next player {} in session {}", nextPlayerId, gameSessionId);
+    }
+
+    private void endBoardPhase(String gameSessionId) {
+        GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
+        if (session == null) return;
+
+        PlayerVHunterGlobalState globalState = session.getPlayerVHunterGlobalState();
+
+        // build final results
+        List<Map<String, Object>> results = globalState.getPlayersFinishStatus().entrySet().stream()
+                .map(e -> Map.<String, Object>of(
+                        "playerId", e.getKey(),
+                        "coins", e.getValue()  // -1 = caught, otherwise coins won
+                ))
+                .toList();
+
+        logger.info("endBoardPhase: board phase complete for session {}", gameSessionId);
+
+        messagingTemplate.convertAndSend(
+                "/topic/game-session/" + gameSessionId,
+                new GameSessionEvent("BOARD_PHASE_FINISHED", globalState)
+        );
+
+        // TODO: persist final results to DB and start next game phase
+        session.setGameSessionStage(GameSessionStage.FINISHED);
+        gameSessionManager.saveGameSession(session);
     }
 
     private void endGame(String gameSessionId, GameSessionState gameSession) {

@@ -7,11 +7,14 @@ import org.jspecify.annotations.Nullable;
 @Data
 @Builder
 public class PlayerVHunterBoardState {
-    @Nullable BoardQuestion boardQuestion;
+    Boolean questionsStarted;
+    Integer currentQuestionIndex;           // ← tracks position in question list
+    @Nullable BoardQuestion boardQuestion;  // ← only current question (sent over network)
     @Nullable String hunterAnswer;
     @Nullable String playerAnswer;
     Integer hunterCorrectAnswers;
     Integer playerCorrectAnswers;
     Integer playerStartingIndex;
     Float moneyInGame;
+    BoardPhase boardPhase;
 }
