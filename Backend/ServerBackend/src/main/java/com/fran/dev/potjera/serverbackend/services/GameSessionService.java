@@ -12,6 +12,8 @@ import com.fran.dev.potjera.serverbackend.models.gamesession.GameSessionStage;
 import com.fran.dev.potjera.serverbackend.models.gamesession.GameSessionState;
 import com.fran.dev.potjera.serverbackend.models.gamesession.coinbooster.CoinBoosterPlayerState;
 import com.fran.dev.potjera.serverbackend.models.gamesession.coinbooster.CoinBoosterQuestion;
+import com.fran.dev.potjera.serverbackend.models.gamesession.playersanswering.PlayersAnsweringQuestion;
+import com.fran.dev.potjera.serverbackend.models.gamesession.playersanswering.PlayersAnsweringState;
 import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.*;
 import com.fran.dev.potjera.serverbackend.models.room.websocket.GameStartingPayload;
 import com.fran.dev.potjera.serverbackend.models.room.websocket.RoomEvent;
@@ -104,6 +106,8 @@ public class GameSessionService {
         );
     }
 
+    //region Coin Booster Phase
+
     // called when all players have connected to game WS
     public void startCoinBoosterSession(String gameSessionId, Long userId) {
         logger.info("Starting coin booster session for {} and user {}", gameSessionId, userId);
@@ -170,6 +174,9 @@ public class GameSessionService {
 //        }
     }
 
+    //endregion Phase
+
+    //region Board Phase
     public void startBoardPhase(String gameSessionId, Long userId) {
         GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
 
@@ -661,14 +668,6 @@ public class GameSessionService {
 
         PlayerVHunterGlobalState globalState = session.getPlayerVHunterGlobalState();
 
-        // build final results
-        List<Map<String, Object>> results = globalState.getPlayersFinishStatus().entrySet().stream()
-                .map(e -> Map.<String, Object>of(
-                        "playerId", e.getKey(),
-                        "coins", e.getValue()  // -1 = caught, otherwise coins won
-                ))
-                .toList();
-
         logger.info("endBoardPhase: board phase complete for session {}", gameSessionId);
 
         messagingTemplate.convertAndSend(
@@ -676,10 +675,244 @@ public class GameSessionService {
                 new GameSessionEvent("BOARD_PHASE_FINISHED", globalState)
         );
 
-        // TODO: persist final results to DB and start next game phase
         session.setGameSessionStage(GameSessionStage.FINISHED);
         gameSessionManager.saveGameSession(session);
+
+        // start players answering phase if at least one player survived
+        boolean anyAlive = globalState.getPlayersFinishStatus().values().stream()
+                .anyMatch(v -> v != -1f);
+
+        if (anyAlive) {
+            CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS).execute(() ->
+                    startPlayersAnsweringPhase(gameSessionId)
+            );
+        } else {
+            logger.info("endBoardPhase: all players caught in session {}, no players answering phase", gameSessionId);
+            // TODO: handle all-caught ending
+        }
     }
+    //endregion
+
+    //region Players Answering Phase
+    // ── Called 5s after endBoardPhase if at least one player survived ─────────────
+    public void startPlayersAnsweringPhase(String gameSessionId) {
+        GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
+        if (session == null) {
+            logger.warn("startPlayersAnsweringPhase: session not found {}", gameSessionId);
+            return;
+        }
+
+        PlayerVHunterGlobalState globalState = session.getPlayerVHunterGlobalState();
+
+        // only players who escaped the hunter (finish status != -1)
+        List<Long> alivePlayers = globalState.getPlayersFinishStatus().entrySet().stream()
+                .filter(e -> e.getValue() != -1f)
+                .map(Map.Entry::getKey)
+                .toList();
+
+        if (alivePlayers.isEmpty()) {
+            logger.info("startPlayersAnsweringPhase: no alive players in session {}, skipping", gameSessionId);
+            return;
+        }
+
+        // fetch 15 QuickFireQuestions and convert to PlayersAnsweringQuestion via CoinBoosterQuestion
+        List<PlayersAnsweringQuestion> questions = quickFireQuestionRepository.findRandomQuestions(15)
+                .stream()
+                .map(qfq -> PlayersAnsweringQuestion.builder()
+                        .question(qfq.getQuestion())
+                        .answer(qfq.getAnswer())
+                        .aliases(qfq.getAliases() != null ? qfq.getAliases() : List.of())
+                        .build())
+                .toList();
+
+        if (questions.isEmpty()) {
+            logger.error("startPlayersAnsweringPhase: no questions found in db for session {}", gameSessionId);
+            return;
+        }
+
+        gameSessionManager.savePlayersAnsweringQuestions(gameSessionId, questions);
+
+        PlayersAnsweringState answeringState = PlayersAnsweringState.builder()
+                .correctAnswers(0)
+                .signedPlayerId(null)
+                .playerIds(alivePlayers)
+                .currentQuestionIndex(0)
+                .build();
+
+        gameSessionManager.savePlayersAnsweringState(gameSessionId, answeringState);
+        session.setGameSessionStage(GameSessionStage.PLAYERS_ANSWERING);
+        gameSessionManager.saveGameSession(session);
+
+        PlayersAnsweringQuestion firstQuestion = questions.get(0);
+
+        messagingTemplate.convertAndSend(
+                "/topic/game-session/" + gameSessionId,
+                new GameSessionEvent("PLAYERS_ANSWERING_START", Map.of(
+                        "question",    firstQuestion.getQuestion(),
+                        "playerIds",   alivePlayers,
+                        "questionNum", 1,
+                        "total",       questions.size()
+                ))
+        );
+
+        logger.info("startPlayersAnsweringPhase: started for session {} — {} players, first question sent",
+                gameSessionId, alivePlayers.size());
+    }
+
+    // ── Player buzzes in — locks the question to them ────────────────────────────
+    public void buzzInPlayer(String gameSessionId, Long playerId) {
+        GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
+        if (session == null) throw new EntityNotFoundException("Session not found: " + gameSessionId);
+
+        PlayersAnsweringState state = gameSessionManager.getPlayersAnsweringState(gameSessionId);
+        if (state == null) throw new EntityNotFoundException("Answering state not found for session: " + gameSessionId);
+
+        // already signed in — first buzz wins
+        if (state.getSignedPlayerId() != null) {
+            logger.info("assignAnsweringPlayer: player {} tried to buzz in but {} already signed in session {}",
+                    playerId, state.getSignedPlayerId(), gameSessionId);
+            return;
+        }
+
+        // must be an alive player
+        if (!state.getPlayerIds().contains(playerId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Player not eligible for this phase");
+        }
+
+        state.setSignedPlayerId(playerId);
+        gameSessionManager.savePlayersAnsweringState(gameSessionId, state);
+
+        logger.info("assignAnsweringPlayer: player {} buzzed in for session {}", playerId, gameSessionId);
+
+        messagingTemplate.convertAndSend(
+                "/topic/game-session/" + gameSessionId,
+                new GameSessionEvent("PLAYER_SIGNED_IN", Map.of(
+                        "playerId", playerId
+                ))
+        );
+    }
+
+    // ── Signed-in player submits answer ──────────────────────────────────────────
+    public void processPlayerAnswer(String gameSessionId, Long playerId, String answer) {
+        GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
+        if (session == null) throw new EntityNotFoundException("Session not found: " + gameSessionId);
+
+        PlayersAnsweringState state = gameSessionManager.getPlayersAnsweringState(gameSessionId);
+        if (state == null) throw new EntityNotFoundException("Answering state not found for session: " + gameSessionId);
+
+        if (!playerId.equals(state.getSignedPlayerId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the signed-in player");
+        }
+
+        List<PlayersAnsweringQuestion> questions = gameSessionManager.getPlayersAnsweringQuestions(gameSessionId);
+        PlayersAnsweringQuestion current = questions.get(state.getCurrentQuestionIndex());
+
+        String trimmed = answer.trim();
+
+        // match against correct answer and any accepted aliases
+        boolean isCorrect = current.getAnswer().equalsIgnoreCase(trimmed)
+                || current.getAliases().stream()
+                .anyMatch(alias -> alias.equalsIgnoreCase(trimmed));
+
+        if (isCorrect) {
+            state.setCorrectAnswers(state.getCorrectAnswers() + 1);
+            gameSessionManager.savePlayersAnsweringState(gameSessionId, state);
+
+            logger.info("processPlayerAnswer: player {} correct in session {} — total: {}",
+                    playerId, gameSessionId, state.getCorrectAnswers());
+
+            messagingTemplate.convertAndSend(
+                    "/topic/game-session/" + gameSessionId,
+                    new GameSessionEvent("PLAYERS_ANSWERING_CORRECT", Map.of(
+                            "playerId",       playerId,
+                            "correctAnswers", state.getCorrectAnswers(),
+                            "answer",         answer
+                    ))
+            );
+
+            CompletableFuture.delayedExecutor(1500, TimeUnit.MILLISECONDS).execute(() ->
+                    sendNextQuestion(gameSessionId)
+            );
+        } else {
+            // wrong — release the lock so others can buzz in
+            state.setSignedPlayerId(null);
+            gameSessionManager.savePlayersAnsweringState(gameSessionId, state);
+
+            logger.info("processPlayerAnswer: player {} wrong in session {}", playerId, gameSessionId);
+
+            messagingTemplate.convertAndSend(
+                    "/topic/game-session/" + gameSessionId,
+                    new GameSessionEvent("PLAYERS_ANSWERING_WRONG", Map.of(
+                            "playerId", playerId,
+                            "answer",   answer
+                    ))
+            );
+        }
+    }
+
+    // ── Advance to next question ──────────────────────────────────────────────────
+    public void sendNextQuestion(String gameSessionId) {
+        GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
+        if (session == null) return;
+
+        PlayersAnsweringState state = gameSessionManager.getPlayersAnsweringState(gameSessionId);
+        if (state == null) return;
+
+        List<PlayersAnsweringQuestion> questions = gameSessionManager.getPlayersAnsweringQuestions(gameSessionId);
+        int nextIndex = state.getCurrentQuestionIndex() + 1;
+
+        if (nextIndex >= questions.size()) {
+            logger.info("sendNextQuestion: all questions done in session {}", gameSessionId);
+            finishPlayersAnsweringPhase(gameSessionId);
+            return;
+        }
+
+        // reset signed player for new question
+        state.setCurrentQuestionIndex(nextIndex);
+        state.setSignedPlayerId(null);
+        gameSessionManager.savePlayersAnsweringState(gameSessionId, state);
+
+        PlayersAnsweringQuestion next = questions.get(nextIndex);
+
+        messagingTemplate.convertAndSend(
+                "/topic/game-session/" + gameSessionId,
+                new GameSessionEvent("PLAYERS_ANSWERING_NEXT_QUESTION", Map.of(
+                        "question",    next.getQuestion(),
+                        "questionNum", nextIndex + 1,
+                        "total",       questions.size()
+                ))
+        );
+
+        logger.info("sendNextQuestion: sent question {} of {} in session {}",
+                nextIndex + 1, questions.size(), gameSessionId);
+    }
+
+    // ── All questions done — wrap up ──────────────────────────────────────────────
+    public void finishPlayersAnsweringPhase(String gameSessionId) {
+        GameSessionState session = gameSessionManager.getGameSessionState(gameSessionId);
+        if (session == null) return;
+
+        PlayersAnsweringState state = gameSessionManager.getPlayersAnsweringState(gameSessionId);
+        if (state == null) return;
+
+        logger.info("finishPlayersAnsweringPhase: session {} finished — correct: {}",
+                gameSessionId, state.getCorrectAnswers());
+
+        messagingTemplate.convertAndSend(
+                "/topic/game-session/" + gameSessionId,
+                new GameSessionEvent("PLAYERS_ANSWERING_FINISHED", Map.of(
+                        "correctAnswers", state.getCorrectAnswers(),
+                        "playerIds",      state.getPlayerIds()
+                ))
+        );
+
+        session.setGameSessionStage(GameSessionStage.FINISHED);
+        gameSessionManager.saveGameSession(session);
+
+        // TODO: persist results, start next phase
+    }
+
+    //endregion
 
     private void endGame(String gameSessionId, GameSessionState gameSession) {
         // build final results sorted by correct answers

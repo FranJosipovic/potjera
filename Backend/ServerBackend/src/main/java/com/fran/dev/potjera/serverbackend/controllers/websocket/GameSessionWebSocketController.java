@@ -1,5 +1,6 @@
 package com.fran.dev.potjera.serverbackend.controllers.websocket;
 
+import com.fran.dev.potjera.serverbackend.models.gamesession.playersanswering.PlayersAnsweringAnswerPayload;
 import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.AnswerBoardQuestionPayload;
 import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.MoneyOfferRequestPayload;
 import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.MoneyOfferResponsePayload;
@@ -21,6 +22,8 @@ public class GameSessionWebSocketController {
     private final GameSessionService gameSessionService;
     Logger logger = LoggerFactory.getLogger(GameSessionWebSocketController.class);
 
+    //region Coin Booster Phase
+
     // called by every player when Game screen opens
     // this triggers COIN_BOOSTER_START for all players
     @MessageMapping("/game-session/{gameSessionId}/connect")
@@ -38,6 +41,7 @@ public class GameSessionWebSocketController {
         logger.info("User {} joined {}", userId, gameSessionId);
         gameSessionService.startCoinBoosterSession(gameSessionId, userId);
     }
+
 
     // called when player finishes all coin booster questions
     @MessageMapping("/game-session/{gameSessionId}/finish-coin-booster")
@@ -61,6 +65,10 @@ public class GameSessionWebSocketController {
                 payload.correctAnswers()
         );
     }
+
+    //endregion
+
+    //region Board Phase
 
     @MessageMapping("/game-session/{gameSessionId}/start-board-phase")
     public void onStartBoardPhase(
@@ -134,5 +142,33 @@ public class GameSessionWebSocketController {
         Long hunterId = Long.parseLong(principal.getName());
         gameSessionService.handleBoardAnswer(gameSessionId, hunterId, payload.answer(), true);
     }
+
+    //endregion
+
+    //region Players Answering phase
+
+    @MessageMapping("/game-session/{gameSessionId}/players-answering/buzz-in")
+    public void onPlayersAnsweringBuzzIn(
+            @DestinationVariable String gameSessionId,
+            Principal principal
+    ) {
+        Long playerId = Long.parseLong(principal.getName());
+        gameSessionService.buzzInPlayer(gameSessionId, playerId);
+    }
+
+    // Signed-in player submits their answer
+    @MessageMapping("/game-session/{gameSessionId}/players-answering/answer")
+    public void onPlayersAnsweringAnswer(
+            @DestinationVariable String gameSessionId,
+            @Payload PlayersAnsweringAnswerPayload payload,
+            Principal principal
+    ) {
+        Long playerId = Long.parseLong(principal.getName());
+        gameSessionService.processPlayerAnswer(gameSessionId, playerId, payload.answer());
+    }
+
+    //endregion
+
+
 }
 
