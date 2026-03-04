@@ -170,6 +170,9 @@ fun GameRoute(
             )
 
             GamePhase.BOARD_PHASE -> {}
+            GamePhase.PLAYERS_ANSWERING_PHASE -> {
+
+            }
         }
     }
 }
