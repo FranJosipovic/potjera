@@ -742,7 +742,11 @@ private fun HunterOfferInput(
             )
             OfferTextField(
                 value = higherInput,
-                onValueChange = { higherInput = it },
+                onValueChange = {
+                    if (it.isEmpty() || it == "-" || it.toFloatOrNull() != null) {
+                        higherInput = it
+                    }
+                },
                 placeholder = "e.g. ${(coinsInPlay * 1.5f).toInt()}",
                 isValid = higherInput.isNotBlank() && (higherInput.toFloatOrNull()
                     ?: 0f) > coinsInPlay,
@@ -758,7 +762,11 @@ private fun HunterOfferInput(
             )
             OfferTextField(
                 value = lowerInput,
-                onValueChange = { lowerInput = it },
+                onValueChange = {
+                    if (it.isEmpty() || it == "-" || it.toFloatOrNull() != null) {
+                        lowerInput = it
+                    }
+                },
                 placeholder = "e.g. ${(coinsInPlay * 0.5f).toInt()}",
                 isValid = lowerInput.isNotBlank() && (lowerInput.toFloatOrNull()
                     ?: 0f) < coinsInPlay,
@@ -809,7 +817,16 @@ private fun OfferTextField(
         }
         BasicTextField(
             value = value,
-            onValueChange = { onValueChange(it.filter { c -> c.isDigit() }) },
+            onValueChange = { newValue ->
+                val filtered = newValue.filter { c -> c.isDigit() || c == '-' || c == '.' }
+                // Only allow '-' as the first character
+                val sanitized = if (filtered.startsWith('-')) {
+                    "-" + filtered.drop(1).filter { c -> c.isDigit() || c == '.' }
+                } else {
+                    filtered
+                }
+                onValueChange(sanitized)
+            },
             textStyle = TextStyle(color = White, fontSize = 14.sp),
             cursorBrush = SolidColor(Purple),
             singleLine = true,

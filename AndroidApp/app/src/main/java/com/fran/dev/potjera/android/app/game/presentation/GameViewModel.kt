@@ -7,6 +7,10 @@ import androidx.lifecycle.viewModelScope
 import com.fran.dev.potjera.android.app.game.playervhunter.presentation.BoardPhase
 import com.fran.dev.potjera.android.app.game.playervhunter.presentation.PlayerVHunterBoardState
 import com.fran.dev.potjera.android.app.game.playervhunter.presentation.PlayerVHunterState
+import com.fran.dev.potjera.android.app.game.presentation.GameEvent.BoardPhaseFinished
+import com.fran.dev.potjera.android.app.game.presentation.GameEvent.PlayerCaught
+import com.fran.dev.potjera.android.app.game.presentation.GameEvent.PlayerWon
+import com.fran.dev.potjera.android.app.game.presentation.GameEvent.PlayersAnsweringFinished
 import com.fran.dev.potjera.android.app.game.services.CoinBoosterFinishedDto
 import com.fran.dev.potjera.android.app.game.services.CoinBoosterPlayerStateDto
 import com.fran.dev.potjera.android.app.game.services.CoinBoosterQuestionDto
@@ -91,11 +95,13 @@ class GameViewModel @Inject constructor(
     }
 
     private fun tryStartCoinBooster(isHunter: Boolean) {
-        if (coinBoosterEventReceived && countdownFinished) {
-            _gamePhase.value = if (isHunter) {
-                GamePhase.COIN_BOOSTER_QUEUE
-            } else {
-                GamePhase.COIN_BOOSTER
+        if (isHunter) {
+            if (countdownFinished) {
+                _gamePhase.value = GamePhase.COIN_BOOSTER_QUEUE
+            }
+        } else {
+            if (coinBoosterEventReceived && countdownFinished) {
+                _gamePhase.value = GamePhase.COIN_BOOSTER
             }
         }
     }
@@ -119,6 +125,38 @@ class GameViewModel @Inject constructor(
 
     private val _gameEvent = Channel<GameEvent>(Channel.BUFFERED)
     val gameEvent: Flow<GameEvent> = _gameEvent.receiveAsFlow()
+
+    // ── Players answering phase ──────────────────────────────────────────────────────────────
+
+    private val _currentAnsweringPlayerId = MutableStateFlow<Long?>(null)
+    val currentAnsweringPlayerId: StateFlow<Long?> = _currentAnsweringPlayerId.asStateFlow()
+
+    private val _playersAnsweringPlayerList =
+        MutableStateFlow<List<PlayersAnsweringPlayer>>(emptyList())
+    val playersAnsweringPlayerList: StateFlow<List<PlayersAnsweringPlayer>> =
+        _playersAnsweringPlayerList
+
+    private val _playerAnsweredCorrectly = MutableStateFlow<Boolean?>(null)
+    val playerAnsweredCorrectly: StateFlow<Boolean?> = _playerAnsweredCorrectly.asStateFlow()
+
+    private val _totalSteps = MutableStateFlow(0)
+    val totalSteps: StateFlow<Int> = _totalSteps
+
+    private val _questionText = MutableStateFlow<String?>(null)
+    val questionText: StateFlow<String?> = _questionText
+
+    private val _correctAnswer = MutableStateFlow<String?>(null)
+    val correctAnswer: StateFlow<String?> = _correctAnswer.asStateFlow()
+
+    fun buzzIn() {
+        gameSessionSocketService.sendBuzzIn(gameSessionId)
+    }
+
+    fun answerQuestion(answer: String) {
+        gameSessionSocketService.sendPlayersAnsweringAnswer(gameSessionId, answer)
+    }
+
+    private val phaseEmojis = listOf("🎮", "🧠", "⚡", "🎯")
 
     private var timerJob: Job? = null
 
@@ -249,6 +287,7 @@ class GameViewModel @Inject constructor(
                 _playerVHunterBoardState.value =
                     _playerVHunterBoardState.value?.copy(boardPhase = BoardPhase.PLAYER_CHOOSING)
             }
+
             is GameSessionSocketEvent.MoneyOfferAccepted -> {
                 _moneyOffer.value = null
                 _playerVHunterBoardState.value = event.dto.toState()
@@ -275,7 +314,7 @@ class GameViewModel @Inject constructor(
                 val username = state.players[state.currentPlayerId] ?: "Unknown"
                 val money = state.playersFinishStatus[state.currentPlayerId] ?: 0f
                 updateAllPlayers(event.dto)
-                viewModelScope.launch { _gameEvent.send(GameEvent.PlayerWon(username, money)) }
+                viewModelScope.launch { _gameEvent.send(PlayerWon(username, money)) }
             }
 
             is GameSessionSocketEvent.PlayerCaught -> {
@@ -283,17 +322,70 @@ class GameViewModel @Inject constructor(
                 val state = event.dto
                 val username = state.players[state.currentPlayerId] ?: "Unknown"
                 updateAllPlayers(event.dto)
-                viewModelScope.launch { _gameEvent.send(GameEvent.PlayerCaught(username)) }
+                viewModelScope.launch { _gameEvent.send(PlayerCaught(username)) }
             }
 
             is GameSessionSocketEvent.BoardPhaseFinished -> {
                 _playerVHunterGlobalState.update { event.dto.toState() }
-                viewModelScope.launch { _gameEvent.send(GameEvent.BoardPhaseFinished) }
+                viewModelScope.launch { _gameEvent.send(BoardPhaseFinished) }
             }
 
             is GameSessionSocketEvent.GameFinished -> {
                 _gameResults.value = event.results
                 _gamePhase.value = GamePhase.FINISHED
+            }
+
+            is GameSessionSocketEvent.PlayersAnsweringPhaseStart -> {
+                _playersAnsweringPlayerList.value =
+                    event.dto.playersAnsweringState.playerIds.mapIndexed { index, playerId ->
+
+                        val playerName =
+                            _allPlayers.value.first { it.playerId == playerId }.username
+
+                        PlayersAnsweringPlayer(
+                            playerId = playerId,
+                            name = playerName,
+                            emoji = phaseEmojis[index % phaseEmojis.size]
+                        )
+                    }
+
+                _totalSteps.update { it + _playersAnsweringPlayerList.value.size }
+
+                _questionText.update { event.dto.question.question }
+
+                _gamePhase.value = GamePhase.PLAYERS_ANSWERING_PHASE
+            }
+
+            is GameSessionSocketEvent.PlayerBuzzedIn -> {
+                _currentAnsweringPlayerId.value = event.dto.playerId
+            }
+
+            is GameSessionSocketEvent.PlayersAnsweringCorrect -> {
+                _playerAnsweredCorrectly.update { true }
+                _currentAnsweringPlayerId.update { null }
+                _correctAnswer.update { event.dto.correctAnswer }
+                _correctAnswers.update { it + 1 }
+                _totalSteps.update { it + 1 }
+            }
+
+            is GameSessionSocketEvent.PlayersAnsweringNextQuestion -> {
+                _playerAnsweredCorrectly.value = null
+                _currentAnsweringPlayerId.update { null }
+                _correctAnswer.update { null }
+                _questionText.update { event.dto.question.question }
+            }
+
+            is GameSessionSocketEvent.PlayersAnsweringWrong -> {
+                _playerAnsweredCorrectly.update { false }
+                _correctAnswer.update { event.dto.correctAnswer }
+            }
+
+            is GameSessionSocketEvent.PlayersAnsweringPhaseFinished -> {
+                viewModelScope.launch {
+                    _gameEvent.send(PlayersAnsweringFinished)
+                    delay(3000)
+                    _gamePhase.value = GamePhase.HUNTER_ANSWERING_PHASE
+                }
             }
 
             is GameSessionSocketEvent.PlayerLeft -> {}
@@ -329,13 +421,13 @@ class GameViewModel @Inject constructor(
 
     // ── Utils ─────────────────────────────────────────────────────────────
 
-    private fun updateAllPlayers(globalState: PlayerVHunterGlobalStateDto){
+    private fun updateAllPlayers(globalState: PlayerVHunterGlobalStateDto) {
         _allPlayers.value = globalState.playersFinishStatus.map {
 
             val username = globalState.players[it.key] ?: "Unknown"
 
             var playerMoneyEarned = it.value
-            if(playerMoneyEarned == -1f){
+            if (playerMoneyEarned == -1f) {
                 playerMoneyEarned = 0f
             }
 
@@ -358,6 +450,7 @@ enum class GamePhase {
     COIN_BOOSTER_QUEUE,
     BOARD_PHASE,
     PLAYERS_ANSWERING_PHASE,
+    HUNTER_ANSWERING_PHASE,
     FINISHED
 }
 
@@ -365,4 +458,15 @@ sealed class GameEvent {
     data class PlayerWon(val username: String, val money: Float) : GameEvent()
     data class PlayerCaught(val username: String) : GameEvent()
     object BoardPhaseFinished : GameEvent()
+    object PlayersAnsweringFinished : GameEvent()
 }
+
+data class PlayersAnsweringState(
+    val correctAnswers: Int = 0,
+    val signedPlayerId: Long? = null,
+    val playerIds: List<Long> = emptyList(),
+    val currentQuestionIndex: Int = 0
+)
+
+
+data class PlayersAnsweringPlayer(val playerId: Long, val name: String, val emoji: String)

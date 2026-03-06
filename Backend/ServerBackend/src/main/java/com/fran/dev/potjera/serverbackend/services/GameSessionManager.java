@@ -1,6 +1,7 @@
 package com.fran.dev.potjera.serverbackend.services;
 
 import com.fran.dev.potjera.serverbackend.models.gamesession.GameSessionState;
+import com.fran.dev.potjera.serverbackend.models.gamesession.hunteranswering.HunterAnsweringState;
 import com.fran.dev.potjera.serverbackend.models.gamesession.playersanswering.PlayersAnsweringQuestion;
 import com.fran.dev.potjera.serverbackend.models.gamesession.playersanswering.PlayersAnsweringState;
 import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.BoardQuestion;
@@ -34,6 +35,17 @@ public class GameSessionManager {
 
     public GameSessionState getGameSessionState(String gameSessionId) {
         return activeSessions.get(gameSessionId);
+    }
+
+    private final ConcurrentHashMap<String, HunterAnsweringState> hunterAnsweringStates
+            = new ConcurrentHashMap<>();
+
+    public void saveHunterAnsweringState(String gameSessionId, HunterAnsweringState state) {
+        hunterAnsweringStates.put(gameSessionId, state);
+    }
+
+    public HunterAnsweringState getHunterAnsweringState(String gameSessionId) {
+        return hunterAnsweringStates.get(gameSessionId);
     }
 
     public void removeGameSession(String gameSessionId) {

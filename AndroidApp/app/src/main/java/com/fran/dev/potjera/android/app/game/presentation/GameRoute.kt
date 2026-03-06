@@ -40,6 +40,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.fran.dev.potjera.android.app.game.hunterphase.presentation.HunterPhaseScreen
+import com.fran.dev.potjera.android.app.game.playersphase.presentation.PlayersPhaseScreen
 import com.fran.dev.potjera.android.app.game.playervhunter.presentation.PlayerVHunterScreen
 import com.fran.dev.potjera.android.app.ui.theme.BgCard
 import com.fran.dev.potjera.android.app.ui.theme.BgDeep
@@ -77,6 +79,14 @@ fun GameRoute(
     val playerVHunterBoardState by viewModel.playerVHunterBoardState.collectAsStateWithLifecycle()
     val moneyOffer by viewModel.moneyOffer.collectAsStateWithLifecycle()
 
+    //players answering phase
+    val currentAnsweringPlayerId by viewModel.currentAnsweringPlayerId.collectAsStateWithLifecycle()
+    val playersAnsweringPlayerList by viewModel.playersAnsweringPlayerList.collectAsStateWithLifecycle()
+    val totalSteps by viewModel.totalSteps.collectAsStateWithLifecycle()
+    val questionText by viewModel.questionText.collectAsStateWithLifecycle()
+    val correctAnswer by viewModel.correctAnswer.collectAsStateWithLifecycle()
+    val playerAnsweredCorrectly by viewModel.playerAnsweredCorrectly.collectAsStateWithLifecycle()
+
     LaunchedEffect(gameSessionId) {
         viewModel.initGameSession(gameSessionId)
     }
@@ -96,6 +106,7 @@ fun GameRoute(
                 autoDismissMillis = 2_000,
                 onDismiss = { gameEvent = null }
             )
+
             is GameEvent.PlayerCaught -> GameEventDialog(
                 icon = "🎯",
                 title = "Player Caught!",
@@ -103,49 +114,42 @@ fun GameRoute(
                 autoDismissMillis = 2_000,
                 onDismiss = { gameEvent = null }
             )
+
             is GameEvent.BoardPhaseFinished -> GameEventDialog(
                 icon = "🏁",
                 title = "Round Over",
                 message = "The board phase has finished. Get ready for the next round!",
-                autoDismissMillis = null, // does not expire
+                autoDismissMillis = 3000, // does not expire
                 onDismiss = { gameEvent = null },
                 confirmLabel = "Go Home",
-                onConfirm = onNavigateHome
+                onConfirm = { gameEvent = null }
+            )
+
+            GameEvent.PlayersAnsweringFinished -> GameEventDialog(
+                icon = "🏁",
+                title = "Players Answering phase finished",
+                message = "Players Answering phase finished. Get ready for the next round!, $totalSteps steps in front of hunter",
+                autoDismissMillis = 3000, // does not expire
+                onDismiss = { gameEvent = null },
             )
         }
     }
 
-    if (gamePhase == GamePhase.BOARD_PHASE) {
-        val globalState = playerVHunterGlobalState
-        val boardState = playerVHunterBoardState
 
-        if (globalState != null && boardState != null) {
-            PlayerVHunterScreen(
-                myPlayerId = viewModel.myPlayerId,
-                isHunter = isHunter,
-                playerVHunterGlobalState = globalState,
-                boardState = boardState,
-                moneyOffer = moneyOffer,
-                allPlayers = allPlayers,
-                onSendMoneyOffer = { hi, lo -> viewModel.sendMoneyOffer(hi, lo) },
-                onAcceptOffer = { viewModel.sendMoneyOfferResponse(it) },
-                onSendAnswer = { viewModel.sendBoardAnswer(it) }
-            )
+    when (gamePhase) {
+        GamePhase.STARTING -> StartingScreen {
+            viewModel.onCountdownFinished()
         }
-    } else if (isHunter) {
-        CoinBoosterQueueScreen(
-            finishedPlayers = finishedPlayers,
-            totalPlayers = totalPlayersCount,
-            isHost = isHost,
-            onStartBoardQuestions = { viewModel.startBoardQuestions() }
-        )
-    } else {
-        when (gamePhase) {
-            GamePhase.STARTING -> StartingScreen {
-                viewModel.onCountdownFinished()
-            }
 
-            GamePhase.COIN_BOOSTER -> CoinBoosterScreen(
+        GamePhase.COIN_BOOSTER -> if (isHunter) {
+            CoinBoosterQueueScreen(
+                finishedPlayers = finishedPlayers,
+                totalPlayers = totalPlayersCount,
+                isHost = isHost,
+                onStartBoardQuestions = { viewModel.startBoardQuestions() }
+            )
+        } else {
+            CoinBoosterScreen(
                 question = viewModel.currentQuestion(),
                 questionIndex = currentIndex,
                 totalQuestions = coinBooster?.questions?.size ?: 0,
@@ -155,28 +159,69 @@ fun GameRoute(
                 onSubmit = { viewModel.submitAnswer(it) },
                 goToNextQuestion = { viewModel.nextQuestion() },
             )
+        }
 
-            GamePhase.COIN_BOOSTER_QUEUE -> CoinBoosterQueueScreen(
-                finishedPlayers = finishedPlayers,
-                totalPlayers = totalPlayersCount,
-                isHost = isHost,
-                onStartBoardQuestions = { viewModel.startBoardQuestions() }
-            )
+        GamePhase.COIN_BOOSTER_QUEUE -> CoinBoosterQueueScreen(
+            finishedPlayers = finishedPlayers,
+            totalPlayers = totalPlayersCount,
+            isHost = isHost,
+            onStartBoardQuestions = { viewModel.startBoardQuestions() }
+        )
 
-            GamePhase.FINISHED -> FinishedScreen(
-                results = gameResults,
-                myPlayerId = viewModel.myPlayerId,
-                onNavigateHome = onNavigateHome
-            )
+        GamePhase.FINISHED -> FinishedScreen(
+            results = gameResults,
+            myPlayerId = viewModel.myPlayerId,
+            onNavigateHome = onNavigateHome
+        )
 
-            GamePhase.BOARD_PHASE -> {}
-            GamePhase.PLAYERS_ANSWERING_PHASE -> {
+        GamePhase.BOARD_PHASE -> {
+            val globalState = playerVHunterGlobalState
+            val boardState = playerVHunterBoardState
 
+            if (globalState != null && boardState != null) {
+                PlayerVHunterScreen(
+                    myPlayerId = viewModel.myPlayerId,
+                    isHunter = isHunter,
+                    playerVHunterGlobalState = globalState,
+                    boardState = boardState,
+                    moneyOffer = moneyOffer,
+                    allPlayers = allPlayers,
+                    onSendMoneyOffer = { hi, lo -> viewModel.sendMoneyOffer(hi, lo) },
+                    onAcceptOffer = { viewModel.sendMoneyOfferResponse(it) },
+                    onSendAnswer = { viewModel.sendBoardAnswer(it) }
+                )
             }
+        }
+
+        GamePhase.PLAYERS_ANSWERING_PHASE -> {
+            PlayersPhaseScreen(
+                currentAnsweringPlayerId = currentAnsweringPlayerId,
+                playersAnsweringPlayerList = playersAnsweringPlayerList,
+                playerAnsweredCorrectly = playerAnsweredCorrectly,
+                totalSteps = totalSteps,
+                questionText = questionText,
+                correctAnswer = correctAnswer,
+                myPlayerId = viewModel.myPlayerId,
+                onBuzzIn = { viewModel.buzzIn() },
+                onAnswer = { answer -> viewModel.answerQuestion(answer) },
+                isHunter = isHunter
+            )
+        }
+
+        GamePhase.HUNTER_ANSWERING_PHASE -> {
+            HunterPhaseScreen(
+                playersAnsweringPlayerList = playersAnsweringPlayerList,
+                totalSteps = totalSteps,
+                hunterCorrectAnswers = 0,
+                questionText = "Test question",
+                correctAnswer = null,
+                playerAnsweredCorrectly = null,
+                isHunter = isHunter,
+                onAnswer = {}
+            )
         }
     }
 }
-
 
 @Composable
 fun GameEventDialog(
@@ -215,7 +260,10 @@ fun GameEventDialog(
     ) {
         AnimatedVisibility(
             visible = visible,
-            enter = fadeIn(tween(200)) + scaleIn(tween(300, easing = EaseOutBack), initialScale = 0.85f)
+            enter = fadeIn(tween(200)) + scaleIn(
+                tween(300, easing = EaseOutBack),
+                initialScale = 0.85f
+            )
         ) {
             Box(
                 modifier = Modifier

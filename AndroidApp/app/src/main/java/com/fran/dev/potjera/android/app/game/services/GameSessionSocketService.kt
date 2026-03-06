@@ -133,7 +133,7 @@ class GameSessionSocketService @Inject constructor() {
 
             "NEW_BOARD_QUESTION",
             "PLAYER_ANSWERED_BOARD_QUESTION_RES",
-            "HUNTER_ANSWERED_BOARD_QUESTION_RES"-> {
+            "HUNTER_ANSWERED_BOARD_QUESTION_RES" -> {
                 val dto: PlayerVHunterBoardStateDto = gson.fromJson(
                     gson.toJson(event.payload), PlayerVHunterBoardStateDto::class.java
                 )
@@ -142,7 +142,7 @@ class GameSessionSocketService @Inject constructor() {
                 GameSessionSocketEvent.BoardQuestionUpdate(dto)
             }
 
-            "MONEY_OFFER_ACCEPTED"-> {
+            "MONEY_OFFER_ACCEPTED" -> {
                 val dto: PlayerVHunterBoardStateDto = gson.fromJson(
                     gson.toJson(event.payload), PlayerVHunterBoardStateDto::class.java
                 )
@@ -179,6 +179,48 @@ class GameSessionSocketService @Inject constructor() {
                     gson.toJson(event.payload), PlayerVHunterGlobalStateDto::class.java
                 )
                 GameSessionSocketEvent.BoardPhaseFinished(dto)
+            }
+
+            "PLAYERS_ANSWERING_START" -> {
+                val dto: PlayersAnsweringStartDto = gson.fromJson(
+                    gson.toJson(event.payload), PlayersAnsweringStartDto::class.java
+                )
+                GameSessionSocketEvent.PlayersAnsweringPhaseStart(dto)
+            }
+
+            "PLAYER_SIGNED_IN" -> {
+                val dto: PlayerSignedInDto = gson.fromJson(
+                    gson.toJson(event.payload), PlayerSignedInDto::class.java
+                )
+                GameSessionSocketEvent.PlayerBuzzedIn(dto)
+            }
+
+            "PLAYERS_ANSWERING_CORRECT" -> {
+                val dto: PlayersAnsweringCorrectDto = gson.fromJson(
+                    gson.toJson(event.payload), PlayersAnsweringCorrectDto::class.java
+                )
+                GameSessionSocketEvent.PlayersAnsweringCorrect(dto)
+            }
+
+            "PLAYERS_ANSWERING_WRONG" -> {
+                val dto: PlayersAnsweringWrongDto = gson.fromJson(
+                    gson.toJson(event.payload), PlayersAnsweringWrongDto::class.java
+                )
+                GameSessionSocketEvent.PlayersAnsweringWrong(dto)
+            }
+
+            "PLAYERS_ANSWERING_NEXT_QUESTION" -> {
+                val dto: PlayersAnsweringNextQuestionDto = gson.fromJson(
+                    gson.toJson(event.payload), PlayersAnsweringNextQuestionDto::class.java
+                )
+                GameSessionSocketEvent.PlayersAnsweringNextQuestion(dto)
+            }
+
+            "PLAYERS_ANSWERING_FINISHED" -> {
+                val dto: PlayersAnsweringFinishedDto = gson.fromJson(
+                    gson.toJson(event.payload), PlayersAnsweringFinishedDto::class.java
+                )
+                GameSessionSocketEvent.PlayersAnsweringPhaseFinished(dto)
             }
 
             else -> {
@@ -229,7 +271,8 @@ class GameSessionSocketService @Inject constructor() {
 
     fun sendBoardAnswer(gameSessionId: String, answer: String, isHunter: Boolean) {
         val payload = gson.toJson(BoardAnswerPayload(answer))
-        val endpoint = if (isHunter) "hunter-answer-board-question" else "player-answer-board-question"
+        val endpoint =
+            if (isHunter) "hunter-answer-board-question" else "player-answer-board-question"
         send(gameSessionId, endpoint, payload)
     }
 
@@ -244,6 +287,15 @@ class GameSessionSocketService @Inject constructor() {
 
     fun sendConnect(gameSessionId: String) {
         send(gameSessionId, "connect", "{}")
+    }
+
+    fun sendBuzzIn(gameSessionId: String) {
+        send(gameSessionId, "players-answering/buzz-in", "{}")
+    }
+
+    fun sendPlayersAnsweringAnswer(gameSessionId: String, answer: String) {
+        val payload = gson.toJson(PlayersAnsweringAnswerPayload(answer))
+        send(gameSessionId, "players-answering/answer", payload)
     }
 
     // ── private helper ────────────────────────────────────────────────────────────
@@ -296,6 +348,21 @@ sealed class GameSessionSocketEvent {
     data class PlayerWon(val dto: PlayerVHunterGlobalStateDto) : GameSessionSocketEvent()
     data class PlayerCaught(val dto: PlayerVHunterGlobalStateDto) : GameSessionSocketEvent()
     data class BoardPhaseFinished(val dto: PlayerVHunterGlobalStateDto) : GameSessionSocketEvent()
+
+    // players answering phase
+    data class PlayersAnsweringPhaseStart(val dto: PlayersAnsweringStartDto) :
+        GameSessionSocketEvent()
+
+    data class PlayerBuzzedIn(val dto: PlayerSignedInDto) : GameSessionSocketEvent()
+    data class PlayersAnsweringCorrect(val dto: PlayersAnsweringCorrectDto) :
+        GameSessionSocketEvent()
+
+    data class PlayersAnsweringWrong(val dto: PlayersAnsweringWrongDto) : GameSessionSocketEvent()
+    data class PlayersAnsweringNextQuestion(val dto: PlayersAnsweringNextQuestionDto) :
+        GameSessionSocketEvent()
+
+    data class PlayersAnsweringPhaseFinished(val dto: PlayersAnsweringFinishedDto) :
+        GameSessionSocketEvent()
 }
 
 
@@ -376,17 +443,54 @@ data class MoneyOfferDto(
     val lowerOffer: Float
 )
 
-data class MoneyOfferAcceptedDto(
-    val playerId: Long,
-    val acceptedOffer: Float,
-    val playerStartingIndex: Int
+// PlayersAnsweringPhase
+data class PlayersAnsweringStateDto(
+    val correctAnswers: Int = 0,
+    val signedPlayerId: Long? = null,
+    val playerIds: List<Long> = emptyList(),
+    val currentQuestionIndex: Int = 0
 )
 
-data class PlayerWonDto(val playerId: Long, val moneyWon: Float)
-data class PlayerCaughtDto(val playerId: Long)
-data class NextPlayerDto(
-    val globalState: PlayerVHunterGlobalStateDto,
-    val boardState: PlayerVHunterBoardStateDto
+data class PlayersAnsweringQuestion(
+    val question: String,
+    val answer: String,
+    val aliases: List<String>
+)
+
+data class PlayersAnsweringStartDto(
+    val playersAnsweringState: PlayersAnsweringStateDto,
+    val question: PlayersAnsweringQuestion,
+    val questionNum: Int
+)
+
+// PLAYER_SIGNED_IN
+data class PlayerSignedInDto(
+    val playerId: Long
+)
+
+// PLAYERS_ANSWERING_CORRECT
+data class PlayersAnsweringCorrectDto(
+    val playerId: Long,
+    val correctAnswer: String
+)
+
+// PLAYERS_ANSWERING_WRONG
+data class PlayersAnsweringWrongDto(
+    val playerId: Long,
+    val correctAnswer: String
+)
+
+// PLAYERS_ANSWERING_NEXT_QUESTION
+data class PlayersAnsweringNextQuestionDto(
+    val question: PlayersAnsweringQuestion,
+    val questionNum: Int,
+    val total: Int
+)
+
+// PLAYERS_ANSWERING_FINISHED
+data class PlayersAnsweringFinishedDto(
+    val correctAnswers: Int,
+    val playerIds: List<Long>
 )
 
 // ── Sent to server (Payload) ──────────────────────────────────────────────
@@ -395,3 +499,4 @@ data class MoneyOfferPayload(val higherOffer: Float, val lowerOffer: Float)
 data class MoneyOfferResponsePayload(val offerAccepted: Float)
 data class BoardAnswerPayload(val answer: String)
 data class FinishCoinBoosterPayload(val correctAnswers: Int)
+data class PlayersAnsweringAnswerPayload(val answer: String)
