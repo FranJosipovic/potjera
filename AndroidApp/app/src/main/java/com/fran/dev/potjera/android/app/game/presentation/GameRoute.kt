@@ -1,5 +1,6 @@
 package com.fran.dev.potjera.android.app.game.presentation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.EaseOutBack
 import androidx.compose.animation.core.tween
@@ -41,6 +42,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fran.dev.potjera.android.app.game.hunterphase.presentation.HunterPhaseScreen
+import com.fran.dev.potjera.android.app.game.models.enums.GamePhase
 import com.fran.dev.potjera.android.app.game.playersphase.presentation.PlayersPhaseScreen
 import com.fran.dev.potjera.android.app.game.playervhunter.presentation.PlayerVHunterScreen
 import com.fran.dev.potjera.android.app.ui.theme.BgCard
@@ -58,26 +60,31 @@ fun GameRoute(
 ) {
     val viewModel: GameViewModel = hiltViewModel()
 
-    val gamePhase by viewModel.gamePhase.collectAsStateWithLifecycle()
+    val isCaptain by viewModel.isCaptain.collectAsStateWithLifecycle()
+    val isSpectator by viewModel.isSpectator.collectAsStateWithLifecycle()
+    val captainId by viewModel.captainId.collectAsStateWithLifecycle()
+    val hunterId by viewModel.hunterId.collectAsStateWithLifecycle()
+
+    val gameSessionState by viewModel.gameSessionState.collectAsStateWithLifecycle()
+
     val isHunter by viewModel.isHunter.collectAsStateWithLifecycle()
     val isHost by viewModel.isHost.collectAsStateWithLifecycle()
     val coinBooster by viewModel.coinBoosterState.collectAsStateWithLifecycle()
-    val currentIndex by viewModel.currentQuestionIndex.collectAsStateWithLifecycle()
-    val correctAnswers by viewModel.correctAnswers.collectAsStateWithLifecycle()
+    val currentIndex by viewModel.currentCoinBoosterQuestionIndex.collectAsStateWithLifecycle()
+    val correctAnswers by viewModel.coinBoosterCorrectAnswers.collectAsStateWithLifecycle()
     val coinsBuilt by viewModel.coinsBuilt.collectAsStateWithLifecycle()
-    val timeLeft by viewModel.timeLeft.collectAsStateWithLifecycle()
-    val finishedPlayers by viewModel.finishedPlayers.collectAsStateWithLifecycle()
+    val timeLeft by viewModel.coinBoosterTimeLeft.collectAsStateWithLifecycle()
+    val finishedPlayers by viewModel.coinBoosterFinishedPlayersList.collectAsStateWithLifecycle()
     val gameResults by viewModel.gameResults.collectAsStateWithLifecycle()
-    val totalPlayersCount by viewModel.playersCount.collectAsStateWithLifecycle()
-    val allPlayers by viewModel.allPlayers.collectAsStateWithLifecycle()
+    val allPlayers by viewModel.players.collectAsStateWithLifecycle()
 
     var gameEvent by remember { mutableStateOf<GameEvent?>(null) }
 
 
     // board phase
-    val playerVHunterGlobalState by viewModel.playerVHunterGlobalState.collectAsStateWithLifecycle()
     val playerVHunterBoardState by viewModel.playerVHunterBoardState.collectAsStateWithLifecycle()
-    val moneyOffer by viewModel.moneyOffer.collectAsStateWithLifecycle()
+    val moneyOffer by viewModel.moneyOfferDto.collectAsStateWithLifecycle()
+    val boardPhaseAnsweringPlayerId by viewModel.boardPhaseCurrentPlayerId.collectAsStateWithLifecycle()
 
     //players answering phase
     val currentAnsweringPlayerId by viewModel.currentAnsweringPlayerId.collectAsStateWithLifecycle()
@@ -86,6 +93,14 @@ fun GameRoute(
     val questionText by viewModel.questionText.collectAsStateWithLifecycle()
     val correctAnswer by viewModel.correctAnswer.collectAsStateWithLifecycle()
     val playerAnsweredCorrectly by viewModel.playerAnsweredCorrectly.collectAsStateWithLifecycle()
+
+    //hunter answering phase
+    val hunterAnsweringPhaseState by viewModel.hunterAnsweringPhaseState.collectAsStateWithLifecycle()
+    val suggestions by viewModel.suggestions.collectAsStateWithLifecycle()
+
+    BackHandler(enabled = gameSessionState.gamePhase != GamePhase.FINISHED) {
+        // Block back on all phases except FINISHED
+    }
 
     LaunchedEffect(gameSessionId) {
         viewModel.initGameSession(gameSessionId)
@@ -132,11 +147,37 @@ fun GameRoute(
                 autoDismissMillis = 3000, // does not expire
                 onDismiss = { gameEvent = null },
             )
+
+            GameEvent.HunterAnsweringFinished -> {
+
+                val iWon =
+                    (isHunter && hunterAnsweringPhaseState.hunterAnsweredCorrectly == true) || (!isHunter && hunterAnsweringPhaseState.hunterWon == false)
+
+                val message = if (iWon) {
+                    "GAME WON"
+                } else {
+                    "YOU LOST"
+                }
+
+                GameEventDialog(
+                    icon = "🏁",
+                    title = "Hunter Answering phase finished",
+                    message = message,
+                    //autoDismissMillis = 3000, // does not expire
+                    confirmLabel = "Press this button to go home",
+                    onConfirm = {
+                        gameEvent = null
+                        onNavigateHome()
+                    },
+                    autoDismissMillis = null,
+                    onDismiss = {}
+                )
+            }
         }
     }
 
 
-    when (gamePhase) {
+    when (gameSessionState.gamePhase) {
         GamePhase.STARTING -> StartingScreen {
             viewModel.onCountdownFinished()
         }
@@ -144,7 +185,14 @@ fun GameRoute(
         GamePhase.COIN_BOOSTER -> if (isHunter) {
             CoinBoosterQueueScreen(
                 finishedPlayers = finishedPlayers,
-                totalPlayers = totalPlayersCount,
+                totalPlayers = gameSessionState.gameSessionPlayers.filter { !it.value.isHunter }.size,
+                isHost = isHost,
+                onStartBoardQuestions = { viewModel.startBoardQuestions() }
+            )
+        } else if (coinBooster.isFinished) {
+            CoinBoosterQueueScreen(
+                finishedPlayers = finishedPlayers,
+                totalPlayers = gameSessionState.gameSessionPlayers.filter { !it.value.isHunter }.size,
                 isHost = isHost,
                 onStartBoardQuestions = { viewModel.startBoardQuestions() }
             )
@@ -152,7 +200,7 @@ fun GameRoute(
             CoinBoosterScreen(
                 question = viewModel.currentQuestion(),
                 questionIndex = currentIndex,
-                totalQuestions = coinBooster?.questions?.size ?: 0,
+                totalQuestions = coinBooster.questions.size,
                 correctAnswers = correctAnswers,
                 coinsBuilt = coinsBuilt,
                 timeLeft = timeLeft,
@@ -161,29 +209,20 @@ fun GameRoute(
             )
         }
 
-        GamePhase.COIN_BOOSTER_QUEUE -> CoinBoosterQueueScreen(
-            finishedPlayers = finishedPlayers,
-            totalPlayers = totalPlayersCount,
-            isHost = isHost,
-            onStartBoardQuestions = { viewModel.startBoardQuestions() }
-        )
-
         GamePhase.FINISHED -> FinishedScreen(
             results = gameResults,
             myPlayerId = viewModel.myPlayerId,
             onNavigateHome = onNavigateHome
         )
 
-        GamePhase.BOARD_PHASE -> {
-            val globalState = playerVHunterGlobalState
-            val boardState = playerVHunterBoardState
-
-            if (globalState != null && boardState != null) {
+        GamePhase.BOARD -> {
+            if (boardPhaseAnsweringPlayerId != null && playerVHunterBoardState != null) {
                 PlayerVHunterScreen(
                     myPlayerId = viewModel.myPlayerId,
                     isHunter = isHunter,
-                    playerVHunterGlobalState = globalState,
-                    boardState = boardState,
+                    currentAnsweringPlayerId = boardPhaseAnsweringPlayerId!!,
+                    hunterId = hunterId,
+                    boardState = playerVHunterBoardState!!,
                     moneyOffer = moneyOffer,
                     allPlayers = allPlayers,
                     onSendMoneyOffer = { hi, lo -> viewModel.sendMoneyOffer(hi, lo) },
@@ -193,7 +232,7 @@ fun GameRoute(
             }
         }
 
-        GamePhase.PLAYERS_ANSWERING_PHASE -> {
+        GamePhase.PLAYERS_ANSWERING -> {
             PlayersPhaseScreen(
                 currentAnsweringPlayerId = currentAnsweringPlayerId,
                 playersAnsweringPlayerList = playersAnsweringPlayerList,
@@ -202,22 +241,29 @@ fun GameRoute(
                 questionText = questionText,
                 correctAnswer = correctAnswer,
                 myPlayerId = viewModel.myPlayerId,
+                isSpectator = isSpectator,
+                isHunter = isHunter,
                 onBuzzIn = { viewModel.buzzIn() },
                 onAnswer = { answer -> viewModel.answerQuestion(answer) },
-                isHunter = isHunter
             )
         }
 
-        GamePhase.HUNTER_ANSWERING_PHASE -> {
+        GamePhase.HUNTER_ANSWERING -> {
             HunterPhaseScreen(
-                playersAnsweringPlayerList = playersAnsweringPlayerList,
-                totalSteps = totalSteps,
-                hunterCorrectAnswers = 0,
-                questionText = "Test question",
-                correctAnswer = null,
-                playerAnsweredCorrectly = null,
                 isHunter = isHunter,
-                onAnswer = {}
+                onAnswer = {
+                    if (hunterAnsweringPhaseState.hunterIsAnswering) {
+                        viewModel.sendHunterAnswer(it)
+                    } else {
+                        viewModel.sendPlayersAnswer(it)
+                    }
+                },
+                state = hunterAnsweringPhaseState,
+                isCaptain = isCaptain,
+                isSpectator = isSpectator,
+                suggestions = suggestions,
+                captainId = captainId,
+                onSuggest = { viewModel.sendSuggestion(it) }
             )
         }
     }

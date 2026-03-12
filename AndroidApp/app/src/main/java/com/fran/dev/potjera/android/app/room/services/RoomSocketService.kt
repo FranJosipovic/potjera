@@ -108,6 +108,14 @@ class RoomSocketService @Inject constructor() {
                 RoomSocketEvent.HunterChanged(payload)
             }
 
+            "CAPTAIN_CHANGED" -> {
+                val payload = gson.fromJson(
+                    gson.toJson(event.payload),
+                    CaptainChangedDto::class.java
+                )
+                RoomSocketEvent.CaptainChanged(payload)
+            }
+
             "ROOM_CLOSED" -> {
                 val payload = gson.fromJson(
                     gson.toJson(event.payload),
@@ -143,6 +151,7 @@ data class PlayerJoinedDto(
     val username: String,
     val isHunter: Boolean,
     val isReady: Boolean,
+    val isCaptain: Boolean,
     val rank: Int
 )
 
@@ -152,6 +161,10 @@ data class GameStartingDto(
 )
 
 data class HunterChangedDto(
+    val playerId: Long
+)
+
+data class CaptainChangedDto(
     val playerId: Long
 )
 
@@ -168,6 +181,7 @@ sealed class RoomSocketEvent {
     data class PlayerJoined(val player: PlayerJoinedDto) : RoomSocketEvent()
     data class GameStarting(val payload: GameStartingDto) : RoomSocketEvent()
     data class HunterChanged(val payload: HunterChangedDto) : RoomSocketEvent()
+    data class CaptainChanged(val payload: CaptainChangedDto) : RoomSocketEvent()
     data class PlayerLeftRoom(val payLoad: PlayerLeftRoomDto) : RoomSocketEvent()
     data class RoomClosed(val payload: RoomClosedDto): RoomSocketEvent()
 }

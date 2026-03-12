@@ -3,7 +3,6 @@ package com.fran.dev.potjera.android.app.game
 import com.fran.dev.potjera.android.app.game.playervhunter.presentation.BoardPhase
 import com.fran.dev.potjera.android.app.game.playervhunter.presentation.BoardQuestion
 import com.fran.dev.potjera.android.app.game.playervhunter.presentation.PlayerVHunterBoardState
-import com.fran.dev.potjera.android.app.game.playervhunter.presentation.PlayerVHunterState
 import com.fran.dev.potjera.android.app.game.services.PlayerVHunterBoardStateDto
 import com.fran.dev.potjera.android.app.game.services.PlayerVHunterGlobalStateDto
 
@@ -24,13 +23,5 @@ fun PlayerVHunterBoardStateDto.toState(): PlayerVHunterBoardState {
         playerStartingIndex  = playerStartingIndex,
         moneyInGame          = moneyInGame,
         boardPhase           = BoardPhase.valueOf(boardPhase)
-    )
-}
-
-fun PlayerVHunterGlobalStateDto.toState(): PlayerVHunterState {
-    return PlayerVHunterState(
-        hunterId            = hunterId,
-        currentPlayerId     = currentPlayerId,
-        playersFinishStatus = playersFinishStatus
     )
 }

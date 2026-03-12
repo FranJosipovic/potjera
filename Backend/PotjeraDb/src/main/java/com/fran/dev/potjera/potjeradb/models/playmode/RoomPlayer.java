@@ -33,6 +33,7 @@ public class RoomPlayer {
     private boolean isHost;
     private boolean isReady;
     private boolean isHunter;
+    private boolean isCaptain;
 
     @CreationTimestamp
     private LocalDateTime joinedAt;

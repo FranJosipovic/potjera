@@ -1,0 +1,5 @@
+ALTER TABLE rooms
+    ADD is_private BOOLEAN;
+
+ALTER TABLE rooms
+    ALTER COLUMN code SET NOT NULL;

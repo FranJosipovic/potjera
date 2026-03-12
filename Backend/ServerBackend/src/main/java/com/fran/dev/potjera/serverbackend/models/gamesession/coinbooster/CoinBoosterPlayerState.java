@@ -9,10 +9,6 @@ import java.util.List;
 @Builder
 public class CoinBoosterPlayerState {
     Long playerId;
-    String playerName;
-    Boolean isHunter;
-    Boolean isHost;
     Integer correctAnswers;
-    List<CoinBoosterQuestion> questions;
     Boolean isFinished = false;
 }

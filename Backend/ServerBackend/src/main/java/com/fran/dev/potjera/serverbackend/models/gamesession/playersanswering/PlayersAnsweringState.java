@@ -10,6 +10,5 @@ import java.util.List;
 public class PlayersAnsweringState {
     Integer correctAnswers = 0;
     Long signedPlayerId = null;
-    List<Long> playerIds;
     Integer currentQuestionIndex;    // tracks position in question list
 }

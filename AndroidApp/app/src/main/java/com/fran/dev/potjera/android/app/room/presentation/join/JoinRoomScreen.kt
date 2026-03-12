@@ -24,10 +24,16 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -81,7 +87,7 @@ fun JoinRoomScreen(
     val isLoadingRooms by viewModel.isLoadingRooms.collectAsStateWithLifecycle()
     val isSearching by viewModel.isSearching.collectAsStateWithLifecycle()
     val error by viewModel.error.collectAsStateWithLifecycle()
-    var roomCode by remember { mutableStateOf("") }
+    var roomSearchTerm by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
@@ -96,26 +102,67 @@ fun JoinRoomScreen(
             ) {
                 JoinRoomTopBar(onBack = onBack)
 
-                RoomCodeInput(
-                    code = roomCode,
+                RoomSearchInput(
+                    searchTerm = roomSearchTerm,
                     onChange = {
-                        roomCode = it.uppercase()
+                        roomSearchTerm = it
                         viewModel.clearSearch()
                     },
-                    onSearch = { viewModel.searchByCode(roomCode) },
+                    onSearch = { viewModel.searchByName(roomSearchTerm) },
                     isLoading = isSearching
                 )
 
                 // search result
                 searchResult?.let { room ->
+                    var showCodeDialog by remember { mutableStateOf(false) }
+                    var roomCode by remember { mutableStateOf("") }
+
                     SearchResultCard(
                         room = room,
-                        onJoin = {
-                            viewModel.joinPrivateRoom(roomCode) {
-                                onNavigateToLobby(it)
-                            }
-                        }
+                        onJoin = { showCodeDialog = true }
                     )
+
+                    if (showCodeDialog) {
+                        AlertDialog(
+                            onDismissRequest = { showCodeDialog = false },
+                            containerColor = BgCard,
+                            title = {
+                                Text("Enter Room Code", color = White, fontWeight = FontWeight.Bold)
+                            },
+                            text = {
+                                OutlinedTextField(
+                                    value = roomCode,
+                                    onValueChange = { roomCode = it },
+                                    label = { Text("Code", color = TextMuted) },
+                                    singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = Purple,
+                                        unfocusedBorderColor = Purple.copy(alpha = 0.4f),
+                                        focusedTextColor = White,
+                                        unfocusedTextColor = White
+                                    )
+                                )
+                            },
+                            confirmButton = {
+                                Button(
+                                    onClick = {
+                                        showCodeDialog = false
+                                        viewModel.joinPrivateRoom(room.id, roomCode) {
+                                            onNavigateToLobby(it)
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Purple)
+                                ) {
+                                    Text("Join", color = White)
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showCodeDialog = false }) {
+                                    Text("Cancel", color = TextMuted)
+                                }
+                            }
+                        )
+                    }
                 }
 
                 // error snackbar
@@ -228,8 +275,8 @@ private fun JoinRoomTopBar(onBack: () -> Unit) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun RoomCodeInput(
-    code: String,
+private fun RoomSearchInput(
+    searchTerm: String,
     onChange: (String) -> Unit,
     onSearch: () -> Unit,
     isLoading: Boolean = false,  // ← add this
@@ -258,17 +305,17 @@ private fun RoomCodeInput(
                     .border(1.dp, BgCardBorder, RoundedCornerShape(10.dp))
                     .padding(horizontal = 14.dp, vertical = 13.dp)
             ) {
-                if (code.isEmpty()) {
+                if (searchTerm.isEmpty()) {
                     Text(
-                        text = "ROOM CODE...",
+                        text = "ROOM NAME...",
                         color = TextMuted.copy(alpha = 0.5f),
                         fontSize = 14.sp,
                         letterSpacing = 2.sp
                     )
                 }
                 BasicTextField(
-                    value = code,
-                    onValueChange = { if (it.length <= 6) onChange(it) },
+                    value = searchTerm,
+                    onValueChange = { onChange(it) },
                     textStyle = TextStyle(
                         color = White,
                         fontSize = 14.sp,

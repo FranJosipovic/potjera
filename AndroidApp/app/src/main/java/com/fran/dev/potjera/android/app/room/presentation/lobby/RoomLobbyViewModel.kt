@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fran.dev.potjera.android.app.room.api.RoomDetailsResponse
 import com.fran.dev.potjera.android.app.room.api.RoomPlayerDTO
+import com.fran.dev.potjera.android.app.room.presentation.lobby.GameEvent.*
 import com.fran.dev.potjera.android.app.room.repository.RoomRepository
 import com.fran.dev.potjera.android.app.room.repository.RoomResult
 import com.fran.dev.potjera.android.app.room.services.RoomSocketEvent
@@ -103,7 +104,7 @@ class RoomLobbyViewModel @Inject constructor(
             socketService.events.collect { event ->
                 when (event) {
                     is RoomSocketEvent.GameStarting -> {
-                        _events.send(GameEvent.StartGame(event.payload.gameSessionId))
+                        _events.send(StartGame(event.payload.gameSessionId))
                     }
 
                     is RoomSocketEvent.HunterChanged -> {
@@ -124,7 +125,8 @@ class RoomLobbyViewModel @Inject constructor(
                             rank = event.player.rank,
                             isHost = false,
                             isReady = event.player.isReady,
-                            isHunter = event.player.isHunter
+                            isHunter = event.player.isHunter,
+                            isCaptain = event.player.isCaptain
                         )
 
                         if (event.player.isHunter) {
@@ -154,6 +156,14 @@ class RoomLobbyViewModel @Inject constructor(
                     is RoomSocketEvent.RoomClosed -> {
                         _events.send(GameEvent.RoomClosed)
                     }
+
+                    is RoomSocketEvent.CaptainChanged -> {
+                        Log.d(TAG, "CaptainChanged: ${event.payload}")
+
+                        _players.update { current ->
+                            current.map { it.copy(isCaptain = it.playerId == event.payload.playerId) }
+                        }
+                    }
                 }
             }
         }
@@ -162,6 +172,12 @@ class RoomLobbyViewModel @Inject constructor(
     fun assignHunter(roomId: String, hunterId: Long) {
         viewModelScope.launch {
             roomRepository.assignHunter(roomId, hunterId)
+        }
+    }
+
+    fun assignCaptain(roomId: String, captainId: Long) {
+        viewModelScope.launch {
+            roomRepository.assignCaptain(roomId, captainId)
         }
     }
 

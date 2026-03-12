@@ -55,8 +55,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.fran.dev.potjera.android.app.game.services.MoneyOfferDto
-import com.fran.dev.potjera.android.app.game.services.PlayerPlayingInfo
+import com.fran.dev.potjera.android.app.game.models.GameSessionPlayer
+import com.fran.dev.potjera.android.app.game.models.dto.board.MoneyOfferDto
 import com.fran.dev.potjera.android.app.ui.theme.BgCard
 import com.fran.dev.potjera.android.app.ui.theme.BgCardBorder
 import com.fran.dev.potjera.android.app.ui.theme.BgDeep
@@ -85,7 +85,7 @@ enum class BoardPhase {
 
 data class BoardQuestion(
     var question: String,
-    var choices: MutableList<String>,
+    var choices: List<String>,
     var correctAnswer: String,
 )
 
@@ -101,11 +101,6 @@ data class PlayerVHunterBoardState(
     var boardPhase: BoardPhase = BoardPhase.HUNTER_MAKING_OFFER
 )
 
-data class PlayerVHunterState(
-    val hunterId: Long,
-    val currentPlayerId: Long,
-    val playersFinishStatus: Map<Long, Float>
-)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PlayerVHunterScreen
@@ -115,17 +110,18 @@ data class PlayerVHunterState(
 fun PlayerVHunterScreen(
     myPlayerId: Long = 0L,
     isHunter: Boolean = false,
-    playerVHunterGlobalState: PlayerVHunterState,
+    currentAnsweringPlayerId: Long,
+    hunterId: Long,
     boardState: PlayerVHunterBoardState,
     moneyOffer: MoneyOfferDto? = null,
-    allPlayers: List<PlayerPlayingInfo> = emptyList(),
+    allPlayers: List<GameSessionPlayer> = emptyList(),
     onSendMoneyOffer: (higher: Float, lower: Float) -> Unit = { _, _ -> },
     onAcceptOffer: (Float) -> Unit = {},
     onSendAnswer: (String) -> Unit = {},
 ) {
     val TAG = "PlayerVHunterScreen"
 
-    val isCurrentPlayer = playerVHunterGlobalState.currentPlayerId == myPlayerId
+    val isCurrentPlayer = currentAnsweringPlayerId == myPlayerId
     val phase = boardState.boardPhase
     val coinsInPlay = boardState.moneyInGame
 
@@ -199,8 +195,8 @@ fun PlayerVHunterScreen(
 
             PlayerIndicators(
                 allPlayers = allPlayers,
-                currentPlayerId = playerVHunterGlobalState.currentPlayerId,
-                hunterId = playerVHunterGlobalState.hunterId,
+                currentPlayerId = currentAnsweringPlayerId,
+                hunterId = hunterId,
                 myPlayerId = myPlayerId
             )
 
@@ -346,7 +342,7 @@ fun BoardQuestionOverlay(
                     revealStep >= 3 && isCorrect -> Green
                     revealStep >= 2 && isCorrect -> Cyan
                     revealStep >= 3 && index == hunterIndex
-                            && boardState.hunterAnswer != null && !isCorrect -> Color.Red
+                            && boardState.hunterAnswer != null -> Color.Red
 
                     isMyAnswer -> Purple
                     else -> BgCardBorder
@@ -864,13 +860,13 @@ private fun StatusCard(emoji: String, message: String, color: Color) {
 
 @Composable
 private fun PlayerIndicators(
-    allPlayers: List<PlayerPlayingInfo>,
+    allPlayers: List<GameSessionPlayer>,
     currentPlayerId: Long?,
     hunterId: Long?,
     myPlayerId: Long,
 ) {
     val nonHunterPlayers = allPlayers.filter { it.playerId != hunterId }
-    val totalEarned = nonHunterPlayers.sumOf { it.moneyEarned.toDouble() }.toFloat()
+    val totalEarned = nonHunterPlayers.sumOf { it.moneyWon.toDouble() }.toFloat()
 
     Column(
         modifier = Modifier.fillMaxWidth(),
@@ -910,7 +906,7 @@ private fun PlayerIndicators(
                         )
                     }
                     Text(
-                        text = if (isMe) "${player.username} (you)" else player.username,
+                        text = if (isMe) "${player.playerName} (you)" else player.playerName,
                         color = if (isActive) Purple else TextMuted,
                         fontSize = 9.sp,
                         fontWeight = if (isActive) FontWeight.Bold else FontWeight.Normal,

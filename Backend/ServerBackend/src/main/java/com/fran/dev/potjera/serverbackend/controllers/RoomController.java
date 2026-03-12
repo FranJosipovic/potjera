@@ -1,10 +1,7 @@
 package com.fran.dev.potjera.serverbackend.controllers;
 
 import com.fran.dev.potjera.potjeradb.models.User;
-import com.fran.dev.potjera.serverbackend.models.room.AssignHunterRequest;
-import com.fran.dev.potjera.serverbackend.models.room.CreateRoomRequest;
-import com.fran.dev.potjera.serverbackend.models.room.CreateRoomResponse;
-import com.fran.dev.potjera.serverbackend.models.room.RoomDetailsResponse;
+import com.fran.dev.potjera.serverbackend.models.room.*;
 import com.fran.dev.potjera.serverbackend.services.RoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -40,12 +37,13 @@ public class RoomController {
         return ResponseEntity.ok(roomService.joinPublicRoom(roomId, user));
     }
 
-    @PostMapping("/join/private/{code}")
+    @PostMapping("/join/private/{roomId}")
     public ResponseEntity<CreateRoomResponse> joinPrivateRoom(
-            @PathVariable String code,
+            @PathVariable String roomId,
+            @RequestBody JoinPrivateRoomRequest request,
             @AuthenticationPrincipal User user
     ) {
-        return ResponseEntity.ok(roomService.joinPrivateRoom(code, user));
+        return ResponseEntity.ok(roomService.joinPrivateRoom(roomId, request.code(), user));
     }
 
     @GetMapping("/{roomId}")
@@ -56,14 +54,14 @@ public class RoomController {
         return ResponseEntity.ok(roomService.getRoomDetails(roomId));
     }
 
-    @GetMapping("/public")
+    @GetMapping("")
     public ResponseEntity<List<RoomDetailsResponse>> getPublicRooms() {
         return ResponseEntity.ok(roomService.getPublicRooms());
     }
 
-    @GetMapping("/code/{code}")
-    public ResponseEntity<RoomDetailsResponse> getRoomByCode(@PathVariable String code) {
-        return ResponseEntity.ok(roomService.getRoomByCode(code));
+    @GetMapping("/search/{name}")
+    public ResponseEntity<RoomDetailsResponse> getRoomByCode(@PathVariable String name) {
+        return ResponseEntity.ok(roomService.searchRoom(name));
     }
 
     @PostMapping("/{roomId}/start")
@@ -78,10 +76,20 @@ public class RoomController {
     @PostMapping("/{roomId}/assign-hunter")
     public ResponseEntity<Void> assignHunter(
             @PathVariable String roomId,
-            @RequestBody AssignHunterRequest request,  // ← receives {"hunterId": 123}
+            @RequestBody AssignHunterRequest request,
             @AuthenticationPrincipal User user
-    ){
+    ) {
         roomService.assignHunter(roomId, request.hunterId, user);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{roomId}/assign-captain")
+    public ResponseEntity<Void> assignCaptain(
+            @PathVariable String roomId,
+            @RequestBody AssignCaptainRequest request,
+            @AuthenticationPrincipal User user
+    ) {
+        roomService.assignCaptain(roomId, request.captainId, user);
         return ResponseEntity.ok().build();
     }
 

@@ -45,7 +45,18 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fran.dev.potjera.android.app.room.api.RoomPlayerDTO
-import com.fran.dev.potjera.android.app.ui.theme.*
+import com.fran.dev.potjera.android.app.ui.theme.BgCard
+import com.fran.dev.potjera.android.app.ui.theme.BgCardBorder
+import com.fran.dev.potjera.android.app.ui.theme.BgDeep
+import com.fran.dev.potjera.android.app.ui.theme.BgHunterBorder
+import com.fran.dev.potjera.android.app.ui.theme.BgHunterCard
+import com.fran.dev.potjera.android.app.ui.theme.Gold
+import com.fran.dev.potjera.android.app.ui.theme.GradButton
+import com.fran.dev.potjera.android.app.ui.theme.GradPrizeCard
+import com.fran.dev.potjera.android.app.ui.theme.Green
+import com.fran.dev.potjera.android.app.ui.theme.Purple
+import com.fran.dev.potjera.android.app.ui.theme.TextMuted
+import com.fran.dev.potjera.android.app.ui.theme.White
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RoomLobbyScreen
@@ -117,8 +128,8 @@ fun RoomLobbyScreen(
                     players = players,
                     maxPlayers = maxPlayers,
                     isHost = isHost,
-                    hunterId = hunter?.playerId,
-                    onAssignHunter = { playerId -> viewModel.assignHunter(roomId, playerId) }
+                    onAssignHunter = { playerId -> viewModel.assignHunter(roomId, playerId) },
+                    onAssignCaptain = { playerId -> viewModel.assignCaptain(roomId, playerId) }
                 )
 
                 HunterSection(hunter = hunter)
@@ -262,8 +273,8 @@ private fun PlayersSection(
     players: List<RoomPlayerDTO>,
     maxPlayers: Int,
     isHost: Boolean,
-    hunterId: Long?,
     onAssignHunter: (Long) -> Unit,
+    onAssignCaptain: (Long) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -286,8 +297,10 @@ private fun PlayersSection(
             PlayerRow(
                 player = player,
                 isHost = isHost,
-                isCurrentHunter = player.playerId == hunterId,
-                onAssignHunter = { onAssignHunter(player.playerId) }
+                isCurrentHunter = player.isHunter,
+                isCurrentCaptain = player.isCaptain,
+                onAssignHunter = { onAssignHunter(player.playerId) },
+                onAssignCaptain = { onAssignCaptain(player.playerId) }
             )
         }
     }
@@ -298,7 +311,9 @@ private fun PlayerRow(
     player: RoomPlayerDTO,
     isHost: Boolean,
     isCurrentHunter: Boolean,
+    isCurrentCaptain: Boolean,
     onAssignHunter: () -> Unit,
+    onAssignCaptain: () -> Unit,
 ) {
     Row(
         modifier = Modifier
@@ -315,11 +330,21 @@ private fun PlayerRow(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(CircleShape)
-                    .background(if (isCurrentHunter) Color.Red else Purple),
+                    .background(
+                        when {
+                            isCurrentHunter -> Color.Red
+                            isCurrentCaptain -> Color(0xFFFFAA00)
+                            else -> Purple
+                        }
+                    ),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = if (isCurrentHunter) "😈" else "🎮",
+                    text = when {
+                        isCurrentHunter -> "😈"
+                        isCurrentCaptain -> "⚔️"
+                        else -> "🎮"
+                    },
                     fontSize = 18.sp
                 )
             }
@@ -340,6 +365,10 @@ private fun PlayerRow(
                         Spacer(modifier = Modifier.width(6.dp))
                         Text("🎯", fontSize = 13.sp)
                     }
+                    if (isCurrentCaptain) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("⚔️", fontSize = 13.sp)
+                    }
                 }
                 Text(
                     text = "Rank #${player.rank}",
@@ -353,8 +382,39 @@ private fun PlayerRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // assign hunter button — only host sees, only for non-host players
             if (isHost) {
+                // assign captain button — not available for hunters
+                if (!isCurrentHunter) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (isCurrentCaptain) Color(0xFFFFAA00).copy(alpha = 0.2f)
+                                else BgCardBorder
+                            )
+                            .border(
+                                1.dp,
+                                if (isCurrentCaptain) Color(0xFFFFAA00).copy(alpha = 0.5f)
+                                else BgCardBorder,
+                                RoundedCornerShape(8.dp)
+                            )
+                            .clickable(
+                                indication = null,
+                                interactionSource = remember { MutableInteractionSource() },
+                                onClick = onAssignCaptain
+                            )
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                    ) {
+                        Text(
+                            text = if (isCurrentCaptain) "Captain ⚔️" else "Set Captain",
+                            color = if (isCurrentCaptain) Color(0xFFFFAA00) else TextMuted,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                // assign hunter button
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
@@ -385,7 +445,7 @@ private fun PlayerRow(
             }
 
             // ready badge
-            Box(
+            /*Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
                     .background(if (player.isReady) Green.copy(alpha = 0.15f) else BgCardBorder)
@@ -402,7 +462,7 @@ private fun PlayerRow(
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold
                 )
-            }
+            }*/
         }
     }
 }

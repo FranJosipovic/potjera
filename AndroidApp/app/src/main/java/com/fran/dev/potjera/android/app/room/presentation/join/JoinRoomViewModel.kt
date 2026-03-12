@@ -49,16 +49,12 @@ class JoinRoomViewModel @Inject constructor(
         }
     }
 
-    fun searchByCode(code: String) {
-        if (code.length != 6) {
-            _error.value = JoinRoomError.InvalidCode
-            return
-        }
+    fun searchByName(name: String) {
         viewModelScope.launch {
             _isSearching.value = true
             _error.value = null
             _searchResult.value = null
-            when (val result = roomRepository.getRoomByCode(code)) {
+            when (val result = roomRepository.searchByName(name)) {
                 is RoomResult.Success -> _searchResult.value = result.data
                 is RoomResult.NotFound -> _error.value = JoinRoomError.RoomNotFound
                 else -> _error.value = JoinRoomError.UnknownError
@@ -88,14 +84,14 @@ class JoinRoomViewModel @Inject constructor(
         }
     }
 
-    fun joinPrivateRoom(code: String, onSuccess: (roomId: String) -> Unit) {
+    fun joinPrivateRoom(roomId:String, code: String, onSuccess: (roomId: String) -> Unit) {
         if (code.length != 6) {
             _error.value = JoinRoomError.InvalidCode
             return
         }
         viewModelScope.launch {
             _error.value = null
-            when (val result = roomRepository.joinPrivateRoom(code)) {
+            when (val result = roomRepository.joinPrivateRoom(roomId = roomId, code = code)) {
                 is RoomResult.Success -> {
                     onSuccess(result.data.roomId)
                 }

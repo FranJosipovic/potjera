@@ -8,4 +8,5 @@ import lombok.Data;
 public class PlayerLeftRoomPayload {
     Long playerId;
     Long newHunterId;  // nullable — only set if hunter left
+    Long newCaptainId;
 }

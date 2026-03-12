@@ -7,6 +7,7 @@ public record RoomPlayerDTO(
         int rank,
         boolean isHost,
         boolean isReady,
-        boolean isHunter
+        boolean isHunter,
+        boolean isCaptain
 ) {
 }

@@ -1,9 +1,11 @@
 package com.fran.dev.potjera.android.app.room.repository
 
 import android.util.Log
+import com.fran.dev.potjera.android.app.room.api.AssignCaptainRequest
 import com.fran.dev.potjera.android.app.room.api.AssignHunterRequest
 import com.fran.dev.potjera.android.app.room.api.CreateRoomRequest
 import com.fran.dev.potjera.android.app.room.api.CreateRoomResponse
+import com.fran.dev.potjera.android.app.room.api.JoinPrivateRoomRequest
 import com.fran.dev.potjera.android.app.room.api.RoomApi
 import com.fran.dev.potjera.android.app.room.api.RoomDetailsResponse
 import retrofit2.HttpException
@@ -49,7 +51,7 @@ class RoomRepositoryImpl(
     override suspend fun getPublicRooms(): RoomResult<List<RoomDetailsResponse>> {
         return try {
             Log.d(TAG, "getPublicRooms: fetching...")
-            val response = api.getPublicRooms()
+            val response = api.getRooms()
             Log.d(TAG, "getPublicRooms: success count=${response.size}")
             RoomResult.Success(response)
         } catch (e: Exception) {
@@ -112,10 +114,15 @@ class RoomRepositoryImpl(
         }
     }
 
-    override suspend fun joinPrivateRoom(code: String): RoomResult<CreateRoomResponse> {
+    override suspend fun joinPrivateRoom(roomId:String, code: String): RoomResult<CreateRoomResponse> {
         return try {
             Log.d(TAG, "joinPrivateRoom: code=$code")
-            val response = api.joinPrivateRoom(code)
+            val response = api.joinPrivateRoom(
+                roomId = roomId,
+                request = JoinPrivateRoomRequest(
+                    code = code
+                )
+            )
             Log.d(TAG, "joinPrivateRoom: success roomId=${response.roomId}")
             RoomResult.Success(response)
         } catch (e: HttpException) {
@@ -150,10 +157,39 @@ class RoomRepositoryImpl(
         }
     }
 
+    override suspend fun searchByName(name: String): RoomResult<RoomDetailsResponse> {
+        return try {
+            Log.d(TAG, "getPublicRooms: fetching...")
+            val response = api.searchByName(name)
+            RoomResult.Success(response)
+        } catch (e: Exception) {
+            Log.e(TAG, "getPublicRooms: ${e.message}", e)
+            RoomResult.UnknownError()
+        }
+    }
+
     override suspend fun assignHunter(roomId: String, hunterId: Long): RoomResult<Unit> {
         return try {
             Log.d(TAG, "assignHunter: roomId=$roomId hunterId=$hunterId")
             api.assignHunter(roomId, AssignHunterRequest(hunterId))
+            RoomResult.Success(Unit)
+        } catch (e: HttpException) {
+            Log.e(TAG, "assignHunter: HTTP ${e.code()} ${e.message()}")
+            when (e.code()) {
+                403 -> RoomResult.Forbidden()
+                404 -> RoomResult.NotFound()
+                else -> RoomResult.UnknownError()
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "assignHunter: ${e.message}", e)
+            RoomResult.UnknownError()
+        }
+    }
+
+    override suspend fun assignCaptain(roomId: String, captainId: Long): RoomResult<Unit> {
+        return try {
+            Log.d(TAG, "assignHunter: roomId=$roomId hunterId=$captainId")
+            api.assignCaptain(roomId, AssignCaptainRequest(captainId))
             RoomResult.Success(Unit)
         } catch (e: HttpException) {
             Log.e(TAG, "assignHunter: HTTP ${e.code()} ${e.message()}")

@@ -16,9 +16,13 @@ public interface RoomRepository extends JpaRepository<Room, String> {
     Optional<Room> findByIdWithPlayers(@Param("roomId") String roomId);
 
     // public rooms = code is null, status is WAITING
-    @Query("SELECT r FROM Room r JOIN FETCH r.players rp JOIN FETCH rp.player WHERE r.code IS NULL AND r.status = 'WAITING'")
+    @Query("SELECT r FROM Room r JOIN FETCH r.players rp JOIN FETCH rp.player WHERE r.status = 'WAITING' AND r.isPrivate = false")
     List<Room> findPublicWaitingRooms();
 
     @Query("SELECT r FROM Room r JOIN FETCH r.players rp JOIN FETCH rp.player WHERE r.code = :code")
     Optional<Room> findByCodeWithPlayers(@Param("code") String code);
+
+    // RoomRepository
+    @Query("SELECT r FROM Room r JOIN FETCH r.players rp JOIN FETCH rp.player WHERE r.isPrivate = true AND r.status = 'WAITING' AND LOWER(r.host.username) LIKE LOWER(CONCAT('%', :hostName, '%'))")
+    List<Room> findPrivateWaitingRoomsByHostName(@Param("hostName") String hostName);
 }

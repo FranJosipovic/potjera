@@ -81,6 +81,7 @@ fun PlayersPhaseScreen(
     myPlayerId: Long?,
     currentAnsweringPlayerId: Long?,
     isHunter: Boolean,
+    isSpectator: Boolean = false,
     onBuzzIn: () -> Unit = {},
     onAnswer: (answer: String) -> Unit = {}
 ) {
@@ -339,7 +340,7 @@ fun PlayersPhaseScreen(
         }
 
         // ── BUZZ IN  /  Answer input ──────────────────────────────────────
-        if (isHunter) {
+        if (isHunter || isSpectator) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -361,123 +362,124 @@ fun PlayersPhaseScreen(
                     )
                 }
             }
-        } else if (currentAnsweringPlayerId == null) {
-            // nobody buzzed yet — show BUZZ IN
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .scale(scale)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(
-                        Brush.horizontalGradient(
-                            listOf(
-                                Color(0xFFFF6B00),
-                                Color(0xFFFFB703)
-                            )
-                        )
-                    )
-                    .clickable(onClick = onBuzzIn),
-                contentAlignment = Alignment.Center
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text("✋", fontSize = 22.sp)
-                    Text(
-                        "BUZZ IN!",
-                        color = White,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.sp
-                    )
-                }
-            }
-        } else if (myPlayerId == currentAnsweringPlayerId) {
-            // current player buzzed — show answer input
-            var answer by remember { mutableStateOf("") }
+        } else {
+            val isSolo = playersAnsweringPlayerList.size == 1 && playersAnsweringPlayerList.first().playerId == myPlayerId
+            val iAmAnswering = myPlayerId == currentAnsweringPlayerId
+            val someoneElseAnswering = currentAnsweringPlayerId != null && !iAmAnswering
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(BgCard)
-                    .border(1.dp, Purple, RoundedCornerShape(16.dp))
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    "YOUR ANSWER",
-                    color = Purple,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp
-                )
-                BasicTextField(
-                    value = answer,
-                    onValueChange = { answer = it },
+            if (isSolo || iAmAnswering) {
+                // Show answer input directly (solo player or buzzed in)
+                var answer by remember { mutableStateOf("") }
+
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(BgInput)
-                        .border(1.dp, BgCardBorder, RoundedCornerShape(10.dp))
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                    textStyle = TextStyle(
-                        color = White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    ),
-                    cursorBrush = SolidColor(Purple),
-                    decorationBox = { inner ->
-                        if (answer.isEmpty()) Text(
-                            "Type your answer…",
-                            color = TextMuted,
-                            fontSize = 16.sp
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(BgCard)
+                        .border(1.dp, Purple, RoundedCornerShape(16.dp))
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        "YOUR ANSWER",
+                        color = Purple,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 2.sp
+                    )
+                    BasicTextField(
+                        value = answer,
+                        onValueChange = { answer = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(BgInput)
+                            .border(1.dp, BgCardBorder, RoundedCornerShape(10.dp))
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        textStyle = TextStyle(
+                            color = White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium
+                        ),
+                        cursorBrush = SolidColor(Purple),
+                        decorationBox = { inner ->
+                            if (answer.isEmpty()) Text(
+                                "Type your answer…",
+                                color = TextMuted,
+                                fontSize = 16.sp
+                            )
+                            inner()
+                        }
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(52.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(GradButton)
+                            .clickable(onClick = { onAnswer(answer) }),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "SUBMIT",
+                            color = White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp
                         )
-                        inner()
                     }
-                )
+                }
+            } else if (someoneElseAnswering) {
+                // Someone else buzzed
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(GradButton)
-                        .clickable(onClick = { onAnswer(answer) }),
+                        .height(64.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(GradButtonDim),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        "SUBMIT",
-                        color = White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.sp
-                    )
+                    val buzzer = playersAnsweringPlayerList.first { it.playerId == currentAnsweringPlayerId }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(buzzer.emoji, fontSize = 20.sp)
+                        Text(
+                            "${buzzer.name} is answering…",
+                            color = TextMuted,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
-            }
-        } else {
-            // someone else buzzed — show waiting state
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(GradButtonDim),
-                contentAlignment = Alignment.Center
-            ) {
-                val buzzer = playersAnsweringPlayerList.first { it.playerId == currentAnsweringPlayerId }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            } else {
+                // Nobody buzzed yet — show BUZZ IN
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(64.dp)
+                        .scale(scale)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(
+                            Brush.horizontalGradient(listOf(Color(0xFFFF6B00), Color(0xFFFFB703)))
+                        )
+                        .clickable(onClick = onBuzzIn),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(buzzer.emoji, fontSize = 20.sp)
-                    Text(
-                        "${buzzer.name} is answering…",
-                        color = TextMuted,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text("✋", fontSize = 22.sp)
+                        Text(
+                            "BUZZ IN!",
+                            color = White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 1.sp
+                        )
+                    }
                 }
             }
         }

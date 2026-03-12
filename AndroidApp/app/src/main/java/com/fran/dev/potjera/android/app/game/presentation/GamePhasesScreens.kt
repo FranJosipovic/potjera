@@ -60,7 +60,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.fran.dev.potjera.android.app.game.services.CoinBoosterQuestionDto
+import com.fran.dev.potjera.android.app.game.models.CoinBoosterQuestion
 import com.fran.dev.potjera.android.app.game.services.GameResultDto
 import com.fran.dev.potjera.android.app.game.services.CoinBoosterFinishedDto
 import com.fran.dev.potjera.android.app.ui.theme.*
@@ -126,7 +126,7 @@ enum class AnswerState { IDLE, CORRECT, INCORRECT }
 @Composable
 fun CoinBoosterScreen(
     username: String = "Player_123",
-    question: CoinBoosterQuestionDto?,
+    question: CoinBoosterQuestion?,
     questionIndex: Int,
     totalQuestions: Int,
     correctAnswers: Int,
@@ -621,7 +621,7 @@ fun CoinBoosterQueueScreen(
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Text("⚡ ", fontSize = 12.sp)
                                 Text(
-                                    text  = "${player.correctAnswers} correct",
+                                    text  = "${player.moneyWon} $",
                                     color = TextMuted,
                                     fontSize = 13.sp
                                 )
@@ -845,7 +845,7 @@ fun FinishedScreen(
 fun CoinBoosterScreenPreview() {
     CoinBoosterScreen(
         username = "Player_123",
-        question = CoinBoosterQuestionDto(
+        question = CoinBoosterQuestion(
             question = "What is the capital of France?",
             answer = "Paris",
             aliases = listOf("paris")
@@ -865,8 +865,8 @@ fun CoinBoosterScreenPreview() {
 fun CoinBoosterQueueScreenPreview() {
     CoinBoosterQueueScreen(
         finishedPlayers = listOf(
-            CoinBoosterFinishedDto(playerId = 1L,"matko", correctAnswers = 7),
-            CoinBoosterFinishedDto(playerId = 2L,"bratko", correctAnswers = 5),
+            CoinBoosterFinishedDto(playerId = 1L,"matko", moneyWon = 3500f),
+            CoinBoosterFinishedDto(playerId = 2L,"bratko", moneyWon = 4000f),
         ),
         totalPlayers = 4,
         isHost = true,

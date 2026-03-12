@@ -6,5 +6,6 @@ public record PlayerJoinedPayload(
         String username,
         Boolean isHunter,
         Boolean isReady,
+        Boolean isCaptain,
         Integer rank
 ) {}

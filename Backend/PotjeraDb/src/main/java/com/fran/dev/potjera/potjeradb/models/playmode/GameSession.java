@@ -27,13 +27,10 @@ public class GameSession {
     private Room room;
 
     @Enumerated(EnumType.STRING)
-    private GameStage gameStage = GameStage.COIN_BOOSTER;
+    private GameStage gameStage = GameStage.STARTED;
 
     @CreationTimestamp
     private LocalDateTime startedAt;
 
     private LocalDateTime finishedAt;
-
-//    @OneToMany(mappedBy = "gameSession", cascade = CascadeType.ALL, orphanRemoval = true)
-//    private List<PlayerSessionEntity> playerSessions = new ArrayList<>();
 }

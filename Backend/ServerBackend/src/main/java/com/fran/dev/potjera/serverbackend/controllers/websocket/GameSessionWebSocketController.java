@@ -1,6 +1,7 @@
 package com.fran.dev.potjera.serverbackend.controllers.websocket;
 
 import com.fran.dev.potjera.serverbackend.models.gamesession.hunteranswering.HunterAnsweringAnswerPayload;
+import com.fran.dev.potjera.serverbackend.models.gamesession.hunteranswering.SuggestionPayload;
 import com.fran.dev.potjera.serverbackend.models.gamesession.playersanswering.PlayersAnsweringAnswerPayload;
 import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.AnswerBoardQuestionPayload;
 import com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter.MoneyOfferRequestPayload;
@@ -188,6 +189,16 @@ public class GameSessionWebSocketController {
     ) {
         Long playerId = Long.parseLong(principal.getName());
         gameSessionService.processPlayerCounterAnswer(gameSessionId, playerId, payload.answer());
+    }
+
+    @MessageMapping("/game-session/{gameSessionId}/hunter-answering/suggestion")
+    public void onSuggestionSent(
+            @DestinationVariable String gameSessionId,
+            @Payload SuggestionPayload payload,
+            Principal principal
+    ) {
+        Long playerId = Long.parseLong(principal.getName());
+        gameSessionService.broadcastSuggestion(payload.suggestion(), gameSessionId, playerId);
     }
 
 }

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fran.dev.potjera.potjerawebscraper.models.Items;
 import com.fran.dev.potjera.potjerawebscraper.models.QuizParserRequest;
 import com.fran.dev.potjera.potjerawebscraper.models.QuizParserResponse;
-import com.fran.dev.potjerawebscraper.models.*;
 import com.fran.dev.potjera.potjerawebscraper.services.QuizExportService;
 import com.fran.dev.potjera.potjerawebscraper.services.QuizParserService;
 import org.springframework.http.HttpHeaders;
