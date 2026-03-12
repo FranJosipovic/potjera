@@ -3,6 +3,7 @@ package com.fran.dev.potjera.serverbackend.models.gamesession.playervhunter;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -10,8 +11,4 @@ import java.util.Map;
 public class PlayerVHunterGlobalState {
     Long hunterId;
     Long currentPlayerId;
-    //playerId + money earned -> -1 if hunted by hunter
-    Map<Long, Float> playersFinishStatus;
-    //playerId + username
-    Map<Long, String> players;
 }

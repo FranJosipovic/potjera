@@ -1,0 +1,26 @@
+ALTER TABLE rooms
+    ADD captain_id BIGINT;
+
+ALTER TABLE rooms
+    ADD host_id BIGINT;
+
+ALTER TABLE rooms
+    ADD hunter_id BIGINT;
+
+ALTER TABLE rooms
+    ALTER COLUMN host_id SET NOT NULL;
+
+ALTER TABLE room_players
+    ADD is_captain BOOLEAN;
+
+ALTER TABLE room_players
+    ALTER COLUMN is_captain SET NOT NULL;
+
+ALTER TABLE rooms
+    ADD CONSTRAINT FK_ROOMS_ON_CAPTAIN FOREIGN KEY (captain_id) REFERENCES users (id);
+
+ALTER TABLE rooms
+    ADD CONSTRAINT FK_ROOMS_ON_HOST FOREIGN KEY (host_id) REFERENCES users (id);
+
+ALTER TABLE rooms
+    ADD CONSTRAINT FK_ROOMS_ON_HUNTER FOREIGN KEY (hunter_id) REFERENCES users (id);

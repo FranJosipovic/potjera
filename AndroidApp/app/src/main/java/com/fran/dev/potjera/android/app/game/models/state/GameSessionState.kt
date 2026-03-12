@@ -1,0 +1,5 @@
+package com.fran.dev.potjera.android.app.game.models.state
+
+data class GlobalPlayersState(
+    
+)

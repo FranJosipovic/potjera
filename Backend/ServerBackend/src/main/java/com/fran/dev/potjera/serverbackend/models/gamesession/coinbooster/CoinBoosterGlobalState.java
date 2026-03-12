@@ -7,8 +7,6 @@ import java.util.List;
 
 @Data
 @Builder
-public class CoinBoosterPlayerState {
-    Long playerId;
-    Integer correctAnswers;
-    Boolean isFinished = false;
+public class CoinBoosterGlobalState {
+    List<CoinBoosterPlayerState> playerStates;
 }

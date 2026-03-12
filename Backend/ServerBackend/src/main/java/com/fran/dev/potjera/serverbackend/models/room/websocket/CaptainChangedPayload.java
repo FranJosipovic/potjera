@@ -5,8 +5,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class PlayerLeftRoomPayload {
-    Long playerId;
-    Long newHunterId;  // nullable — only set if hunter left
-    Long newCaptainId;
+public class CaptainChangedPayload {
+    private String roomPlayerId;
+    private Long playerId;
 }

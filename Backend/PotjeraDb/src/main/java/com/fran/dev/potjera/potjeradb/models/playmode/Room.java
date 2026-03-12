@@ -1,6 +1,7 @@
 package com.fran.dev.potjera.potjeradb.models.playmode;
 
 import com.fran.dev.potjera.potjeradb.enums.RoomStatus;
+import com.fran.dev.potjera.potjeradb.models.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -24,21 +25,27 @@ public class Room {
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
-    @Column(unique = true, nullable = true, length = 6)
+    @Column(unique = true, nullable = false, length = 6)
     private String code;
 
-    /*@ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "host_id", nullable = false)
     private User host;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hunter_id", nullable = true)
-    private User hunter;*/
+    private User hunter;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "captain_id", nullable = true)
+    private User captain;
 
     @Enumerated(EnumType.STRING)
     private RoomStatus status;
 
     private int maxPlayers = 5;
+
+    private Boolean isPrivate = false;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
