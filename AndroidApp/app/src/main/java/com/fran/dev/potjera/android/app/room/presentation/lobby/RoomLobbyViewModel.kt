@@ -6,7 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fran.dev.potjera.android.app.room.api.RoomDetailsResponse
 import com.fran.dev.potjera.android.app.room.api.RoomPlayerDTO
-import com.fran.dev.potjera.android.app.room.presentation.lobby.GameEvent.*
+import com.fran.dev.potjera.android.app.room.model.event.LobbyEvent
 import com.fran.dev.potjera.android.app.room.repository.RoomRepository
 import com.fran.dev.potjera.android.app.room.repository.RoomResult
 import com.fran.dev.potjera.android.app.room.services.RoomSocketEvent
@@ -104,7 +104,7 @@ class RoomLobbyViewModel @Inject constructor(
             socketService.events.collect { event ->
                 when (event) {
                     is RoomSocketEvent.GameStarting -> {
-                        _events.send(StartGame(event.payload.gameSessionId))
+                        _events.send(LobbyEvent.StartGame(event.payload.gameSessionId))
                     }
 
                     is RoomSocketEvent.HunterChanged -> {
@@ -154,7 +154,7 @@ class RoomLobbyViewModel @Inject constructor(
                     }
 
                     is RoomSocketEvent.RoomClosed -> {
-                        _events.send(GameEvent.RoomClosed)
+                        _events.send(LobbyEvent.RoomClosed)
                     }
 
                     is RoomSocketEvent.CaptainChanged -> {
@@ -187,7 +187,7 @@ class RoomLobbyViewModel @Inject constructor(
         }
     }
 
-    private val _events = Channel<GameEvent>()
+    private val _events = Channel<LobbyEvent>()
     val events = _events.receiveAsFlow()
 
     override fun onCleared() {
@@ -196,7 +196,3 @@ class RoomLobbyViewModel @Inject constructor(
     }
 }
 
-sealed class GameEvent {
-    data class StartGame(val gameSessionId: String) : GameEvent()
-    object RoomClosed : GameEvent()
-}

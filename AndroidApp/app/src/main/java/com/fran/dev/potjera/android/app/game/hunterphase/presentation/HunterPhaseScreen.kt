@@ -45,8 +45,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.fran.dev.potjera.android.app.game.presentation.HunterAnsweringPhaseState
-import com.fran.dev.potjera.android.app.game.presentation.PlayersAnsweringPlayer
+import com.fran.dev.potjera.android.app.game.models.SuggestionItem
+import com.fran.dev.potjera.android.app.game.models.state.HunterAnsweringPhaseState
+import com.fran.dev.potjera.android.app.game.models.state.PlayersAnsweringPlayer
 import com.fran.dev.potjera.android.app.ui.theme.BgCard
 import com.fran.dev.potjera.android.app.ui.theme.BgCardBorder
 import com.fran.dev.potjera.android.app.ui.theme.BgDeep
@@ -60,20 +61,6 @@ import com.fran.dev.potjera.android.app.ui.theme.TextMuted
 import com.fran.dev.potjera.android.app.ui.theme.White
 import kotlinx.coroutines.delay
 import kotlin.math.max
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Data models
-// ─────────────────────────────────────────────────────────────────────────────
-
-data class SuggestionItem(
-    val playerId: Long,
-    val username: String,
-    val suggestion: String,
-)
-
-// ─────────────────────────────────────────────────────────────────────────────
-// HunterPhaseScreen
-// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 fun HunterPhaseScreen(

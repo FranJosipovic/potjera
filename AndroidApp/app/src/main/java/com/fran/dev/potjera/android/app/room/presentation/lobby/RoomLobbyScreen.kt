@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.fran.dev.potjera.android.app.room.api.RoomPlayerDTO
+import com.fran.dev.potjera.android.app.room.model.event.LobbyEvent
 import com.fran.dev.potjera.android.app.ui.theme.BgCard
 import com.fran.dev.potjera.android.app.ui.theme.BgCardBorder
 import com.fran.dev.potjera.android.app.ui.theme.BgDeep
@@ -53,7 +54,6 @@ import com.fran.dev.potjera.android.app.ui.theme.BgHunterCard
 import com.fran.dev.potjera.android.app.ui.theme.Gold
 import com.fran.dev.potjera.android.app.ui.theme.GradButton
 import com.fran.dev.potjera.android.app.ui.theme.GradPrizeCard
-import com.fran.dev.potjera.android.app.ui.theme.Green
 import com.fran.dev.potjera.android.app.ui.theme.Purple
 import com.fran.dev.potjera.android.app.ui.theme.TextMuted
 import com.fran.dev.potjera.android.app.ui.theme.White
@@ -84,8 +84,8 @@ fun RoomLobbyScreen(
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
-                is GameEvent.StartGame -> onStartGame(event.gameSessionId)
-                is GameEvent.RoomClosed -> onBack()
+                is LobbyEvent.StartGame -> onStartGame(event.gameSessionId)
+                is LobbyEvent.RoomClosed -> onBack()
             }
         }
     }

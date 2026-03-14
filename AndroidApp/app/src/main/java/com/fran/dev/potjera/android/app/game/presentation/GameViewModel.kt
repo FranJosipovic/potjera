@@ -4,23 +4,22 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fran.dev.potjera.android.app.game.hunterphase.presentation.SuggestionItem
+import com.fran.dev.potjera.android.app.game.models.BoardQuestion
+import com.fran.dev.potjera.android.app.game.models.CoinBoosterPlayerFinishInfo
 import com.fran.dev.potjera.android.app.game.models.CoinBoosterQuestion
+import com.fran.dev.potjera.android.app.game.models.GameFinishPlayerResult
 import com.fran.dev.potjera.android.app.game.models.GameSessionPlayer
-import com.fran.dev.potjera.android.app.game.models.dto.board.MoneyOfferDto
+import com.fran.dev.potjera.android.app.game.models.MoneyOffer
+import com.fran.dev.potjera.android.app.game.models.SuggestionItem
+import com.fran.dev.potjera.android.app.game.models.enums.BoardPhase
 import com.fran.dev.potjera.android.app.game.models.enums.GamePhase
+import com.fran.dev.potjera.android.app.game.models.event.GameEvent
+import com.fran.dev.potjera.android.app.game.models.event.GameSessionSocketEvent
 import com.fran.dev.potjera.android.app.game.models.state.CoinBoosterPlayerState
 import com.fran.dev.potjera.android.app.game.models.state.GameSessionState
-import com.fran.dev.potjera.android.app.game.playervhunter.presentation.BoardPhase
-import com.fran.dev.potjera.android.app.game.playervhunter.presentation.BoardQuestion
-import com.fran.dev.potjera.android.app.game.playervhunter.presentation.PlayerVHunterBoardState
-import com.fran.dev.potjera.android.app.game.presentation.GameEvent.BoardPhaseFinished
-import com.fran.dev.potjera.android.app.game.presentation.GameEvent.PlayerCaught
-import com.fran.dev.potjera.android.app.game.presentation.GameEvent.PlayerWon
-import com.fran.dev.potjera.android.app.game.presentation.GameEvent.PlayersAnsweringFinished
-import com.fran.dev.potjera.android.app.game.services.CoinBoosterFinishedDto
-import com.fran.dev.potjera.android.app.game.services.GameResultDto
-import com.fran.dev.potjera.android.app.game.services.GameSessionSocketEvent
+import com.fran.dev.potjera.android.app.game.models.state.HunterAnsweringPhaseState
+import com.fran.dev.potjera.android.app.game.models.state.PlayerVHunterBoardState
+import com.fran.dev.potjera.android.app.game.models.state.PlayersAnsweringPlayer
 import com.fran.dev.potjera.android.app.game.services.GameSessionSocketService
 import com.fran.dev.potjera.android.app.game.toState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -175,8 +174,8 @@ class GameViewModel @Inject constructor(
     val coinBoosterTimeLeft: StateFlow<Int> = _coinBoosterTimeLeft.asStateFlow()
 
     private val _coinBoosterFinishedPlayersList =
-        MutableStateFlow<List<CoinBoosterFinishedDto>>(emptyList())
-    val coinBoosterFinishedPlayersList: StateFlow<List<CoinBoosterFinishedDto>> =
+        MutableStateFlow<List<CoinBoosterPlayerFinishInfo>>(emptyList())
+    val coinBoosterFinishedPlayersList: StateFlow<List<CoinBoosterPlayerFinishInfo>> =
         _coinBoosterFinishedPlayersList.asStateFlow()
 
     fun startBoardQuestions() {
@@ -293,8 +292,8 @@ class GameViewModel @Inject constructor(
     val playerVHunterBoardState: StateFlow<PlayerVHunterBoardState?> =
         _playerVHunterBoardState.asStateFlow()
 
-    private val _moneyOfferDto = MutableStateFlow<MoneyOfferDto?>(null)
-    val moneyOfferDto: StateFlow<MoneyOfferDto?> = _moneyOfferDto.asStateFlow()
+    private val _moneyOffer = MutableStateFlow<MoneyOffer?>(null)
+    val moneyOffer: StateFlow<MoneyOffer?> = _moneyOffer.asStateFlow()
 
     private val _suggestions = MutableStateFlow<List<SuggestionItem>>(emptyList<SuggestionItem>())
     val suggestions: StateFlow<List<SuggestionItem>> = _suggestions.asStateFlow()
@@ -353,8 +352,8 @@ class GameViewModel @Inject constructor(
 
     // ── End game ──────────────────────────────────────────────────────────────
 
-    private val _gameResults = MutableStateFlow<List<GameResultDto>>(emptyList())
-    val gameResults: StateFlow<List<GameResultDto>> = _gameResults.asStateFlow()
+    private val _gameResults = MutableStateFlow<List<GameFinishPlayerResult>>(emptyList())
+    val gameResults: StateFlow<List<GameFinishPlayerResult>> = _gameResults.asStateFlow()
 
     // ── Event handler ─────────────────────────────────────────────────────────
 
@@ -398,14 +397,20 @@ class GameViewModel @Inject constructor(
             }
 
             is GameSessionSocketEvent.CoinBoosterFinishedEvent -> {
-                _coinBoosterFinishedPlayersList.update { it + event.payload }
+                _coinBoosterFinishedPlayersList.update {
+                    it + CoinBoosterPlayerFinishInfo(
+                        playerId = event.payload.playerId,
+                        username = event.payload.username,
+                        moneyWon = event.payload.moneyWon
+                    )
+                }
             }
 
             //ALSO CALLED WHEN MOVED TO NEXT PLAYER
             is GameSessionSocketEvent.BoardPhaseStartingEvent -> {
                 _boardPhaseCurrentPlayerId.update { event.dto.currentPlayerId }
                 _playerVHunterBoardState.update { event.dto.boardState.toState() }
-                _moneyOfferDto.update { null }
+                _moneyOffer.update { null }
                 _gameSessionState.update {
                     it.copy(
                         gamePhase = GamePhase.BOARD
@@ -414,14 +419,19 @@ class GameViewModel @Inject constructor(
             }
 
             is GameSessionSocketEvent.MoneyOfferEvent -> {
-                _moneyOfferDto.update { event.dto }
+                _moneyOffer.update {
+                    MoneyOffer(
+                        higherOffer = event.dto.higherOffer,
+                        lowerOffer = event.dto.lowerOffer
+                    )
+                }
                 _playerVHunterBoardState.update {
                     PlayerVHunterBoardState(boardPhase = BoardPhase.PLAYER_CHOOSING)
                 }
             }
 
             is GameSessionSocketEvent.MoneyOfferAcceptedEvent -> {
-                _moneyOfferDto.update { null }
+                _moneyOffer.update { null }
                 _playerVHunterBoardState.update {
                     it?.copy(
                         boardPhase = BoardPhase.OFFER_ACCEPTED,
@@ -483,7 +493,14 @@ class GameViewModel @Inject constructor(
 
                 val username = event.dto.playersListUpdated[event.dto.playerWonId]!!.playerName
 
-                viewModelScope.launch { _gameEvent.send(PlayerWon(username, event.dto.moneyWon)) }
+                viewModelScope.launch {
+                    _gameEvent.send(
+                        GameEvent.PlayerWon(
+                            username,
+                            event.dto.moneyWon
+                        )
+                    )
+                }
             }
 
             is GameSessionSocketEvent.PlayerCaughtEvent -> {
@@ -494,15 +511,20 @@ class GameViewModel @Inject constructor(
                 }
 
                 val username = event.dto.playersListUpdated[event.dto.playerCaughtId]!!.playerName
-                viewModelScope.launch { _gameEvent.send(PlayerCaught(username)) }
+                viewModelScope.launch { _gameEvent.send(GameEvent.PlayerCaught(username)) }
             }
 
             is GameSessionSocketEvent.BoardPhaseFinishedEvent -> {
-                viewModelScope.launch { _gameEvent.send(BoardPhaseFinished) }
+                viewModelScope.launch { _gameEvent.send(GameEvent.BoardPhaseFinished) }
             }
 
             is GameSessionSocketEvent.GameFinishedEvent -> {
-                _gameResults.value = event.results
+                _gameResults.value = event.results.map {
+                    GameFinishPlayerResult(
+                        playerId = it.playerId,
+                        correctAnswers = it.correctAnswers
+                    )
+                }
                 _gameSessionState.update {
                     it.copy(
                         gamePhase = GamePhase.FINISHED
@@ -560,7 +582,7 @@ class GameViewModel @Inject constructor(
 
             is GameSessionSocketEvent.PlayersAnsweringPhaseFinishedEvent -> {
                 viewModelScope.launch {
-                    _gameEvent.send(PlayersAnsweringFinished)
+                    _gameEvent.send(GameEvent.PlayersAnsweringFinished)
                 }
             }
 
@@ -745,26 +767,3 @@ class GameViewModel @Inject constructor(
     }
 }
 
-sealed class GameEvent {
-    data class PlayerWon(val username: String, val money: Float) : GameEvent()
-    data class PlayerCaught(val username: String) : GameEvent()
-    object BoardPhaseFinished : GameEvent()
-    object PlayersAnsweringFinished : GameEvent()
-    object HunterAnsweringFinished : GameEvent()
-}
-
-data class PlayersAnsweringPlayer(val playerId: Long, val name: String, val emoji: String)
-
-data class HunterAnsweringPhaseState(
-    val hunterWon: Boolean? = null,
-    val playersSteps: Int = 0,
-    val hunterCorrectAnswers: Int = 0,
-    val question: String = "",
-    val correctAnswer: String? = null,
-    val hunterIsAnswering: Boolean = true,
-    val playersAreAnswering: Boolean = false,
-    val players: List<PlayersAnsweringPlayer> = emptyList(),
-    val hunterAnsweredCorrectly: Boolean? = null, //null -> answer not given yet
-    val playersAnsweredCorrectly: Boolean? = null,
-    val endTimestamp: Long = 0
-)

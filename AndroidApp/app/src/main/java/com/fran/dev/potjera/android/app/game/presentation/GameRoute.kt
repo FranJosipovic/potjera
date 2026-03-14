@@ -43,6 +43,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.fran.dev.potjera.android.app.game.hunterphase.presentation.HunterPhaseScreen
 import com.fran.dev.potjera.android.app.game.models.enums.GamePhase
+import com.fran.dev.potjera.android.app.game.models.event.GameEvent
 import com.fran.dev.potjera.android.app.game.playersphase.presentation.PlayersPhaseScreen
 import com.fran.dev.potjera.android.app.game.playervhunter.presentation.PlayerVHunterScreen
 import com.fran.dev.potjera.android.app.ui.theme.BgCard
@@ -83,7 +84,7 @@ fun GameRoute(
 
     // board phase
     val playerVHunterBoardState by viewModel.playerVHunterBoardState.collectAsStateWithLifecycle()
-    val moneyOffer by viewModel.moneyOfferDto.collectAsStateWithLifecycle()
+    val moneyOffer by viewModel.moneyOffer.collectAsStateWithLifecycle()
     val boardPhaseAnsweringPlayerId by viewModel.boardPhaseCurrentPlayerId.collectAsStateWithLifecycle()
 
     //players answering phase

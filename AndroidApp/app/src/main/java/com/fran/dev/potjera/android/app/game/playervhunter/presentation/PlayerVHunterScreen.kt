@@ -56,7 +56,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fran.dev.potjera.android.app.game.models.GameSessionPlayer
-import com.fran.dev.potjera.android.app.game.models.dto.board.MoneyOfferDto
+import com.fran.dev.potjera.android.app.game.models.MoneyOffer
+import com.fran.dev.potjera.android.app.game.models.enums.BoardPhase
+import com.fran.dev.potjera.android.app.game.models.state.PlayerVHunterBoardState
 import com.fran.dev.potjera.android.app.ui.theme.BgCard
 import com.fran.dev.potjera.android.app.ui.theme.BgCardBorder
 import com.fran.dev.potjera.android.app.ui.theme.BgDeep
@@ -70,42 +72,6 @@ import com.fran.dev.potjera.android.app.ui.theme.Purple
 import com.fran.dev.potjera.android.app.ui.theme.TextMuted
 import kotlinx.coroutines.delay
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Combined phase enum — mirrors backend BoardPhase
-// ─────────────────────────────────────────────────────────────────────────────
-
-enum class BoardPhase {
-    HUNTER_MAKING_OFFER,
-    PLAYER_CHOOSING,
-    OFFER_ACCEPTED,
-    QUESTION_READING,
-    ANSWER_GIVEN,
-    ANSWER_REVEAL
-}
-
-data class BoardQuestion(
-    var question: String,
-    var choices: List<String>,
-    var correctAnswer: String,
-)
-
-data class PlayerVHunterBoardState(
-    var questionsStarted: Boolean = false,
-    var boardQuestion: BoardQuestion? = null,
-    var hunterAnswer: String? = null,
-    var playerAnswer: String? = null,
-    var hunterCorrectAnswers: Int = 0,
-    var playerCorrectAnswers: Int = 0,
-    var playerStartingIndex: Int = 2,
-    var moneyInGame: Float = 0f,
-    var boardPhase: BoardPhase = BoardPhase.HUNTER_MAKING_OFFER
-)
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PlayerVHunterScreen
-// ─────────────────────────────────────────────────────────────────────────────
-
 @Composable
 fun PlayerVHunterScreen(
     myPlayerId: Long = 0L,
@@ -113,7 +79,7 @@ fun PlayerVHunterScreen(
     currentAnsweringPlayerId: Long,
     hunterId: Long,
     boardState: PlayerVHunterBoardState,
-    moneyOffer: MoneyOfferDto? = null,
+    moneyOffer: MoneyOffer? = null,
     allPlayers: List<GameSessionPlayer> = emptyList(),
     onSendMoneyOffer: (higher: Float, lower: Float) -> Unit = { _, _ -> },
     onAcceptOffer: (Float) -> Unit = {},
@@ -163,7 +129,8 @@ fun PlayerVHunterScreen(
                 displayedPlayerPos = displayedPlayerPos,
                 displayedHunterPos = displayedHunterPos,
                 onAcceptHigher = { moneyOffer?.higherOffer?.let { onAcceptOffer(it) } },
-                onAcceptLower = { moneyOffer?.lowerOffer?.let { onAcceptOffer(it) } }
+                onAcceptLower = { moneyOffer?.lowerOffer?.let { onAcceptOffer(it) } },
+                onAcceptEarned = { onAcceptOffer(it) }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
@@ -487,6 +454,7 @@ private fun BoardLadder(
     displayedHunterPos: Int,
     onAcceptHigher: () -> Unit,
     onAcceptLower: () -> Unit,
+    onAcceptEarned: (amount: Float) -> Unit,
 ) {
     val steps = listOf(0, 1, 2, 3, 4, 5, 6)
     val isChoosingPhase = phase == BoardPhase.PLAYER_CHOOSING
@@ -616,7 +584,7 @@ private fun BoardLadder(
                                 isHigherOfferStep -> onAcceptHigher()
                                 isLowerOfferStep -> onAcceptLower()
                                 // earned = accept current moneyInGame = lower path (no change)
-                                isEarnedStep -> onAcceptLower()
+                                isEarnedStep -> onAcceptEarned(boardState.moneyInGame)
                             }
                         } else Modifier
                     ),

@@ -60,9 +60,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.fran.dev.potjera.android.app.game.models.CoinBoosterPlayerFinishInfo
 import com.fran.dev.potjera.android.app.game.models.CoinBoosterQuestion
-import com.fran.dev.potjera.android.app.game.services.GameResultDto
-import com.fran.dev.potjera.android.app.game.services.CoinBoosterFinishedDto
+import com.fran.dev.potjera.android.app.game.models.GameFinishPlayerResult
 import com.fran.dev.potjera.android.app.ui.theme.*
 import kotlinx.coroutines.delay
 
@@ -500,7 +500,7 @@ fun CoinBoosterScreen(
 
 @Composable
 fun CoinBoosterQueueScreen(
-    finishedPlayers: List<CoinBoosterFinishedDto> = emptyList(),
+    finishedPlayers: List<CoinBoosterPlayerFinishInfo> = emptyList(),
     totalPlayers: Int,
     isHost: Boolean,
     onStartBoardQuestions: () -> Unit,
@@ -686,7 +686,7 @@ fun CoinBoosterQueueScreen(
 
 @Composable
 fun FinishedScreen(
-    results: List<GameResultDto> = emptyList(),
+    results: List<GameFinishPlayerResult> = emptyList(),
     myPlayerId: Long = 0L,
     onNavigateHome: () -> Unit = {},
 ) {
@@ -865,8 +865,8 @@ fun CoinBoosterScreenPreview() {
 fun CoinBoosterQueueScreenPreview() {
     CoinBoosterQueueScreen(
         finishedPlayers = listOf(
-            CoinBoosterFinishedDto(playerId = 1L,"matko", moneyWon = 3500f),
-            CoinBoosterFinishedDto(playerId = 2L,"bratko", moneyWon = 4000f),
+            CoinBoosterPlayerFinishInfo(playerId = 1L,"matko", moneyWon = 3500f),
+            CoinBoosterPlayerFinishInfo(playerId = 2L,"bratko", moneyWon = 4000f),
         ),
         totalPlayers = 4,
         isHost = true,
@@ -879,10 +879,10 @@ fun CoinBoosterQueueScreenPreview() {
 fun FinishedScreenPreview() {
     FinishedScreen(
         results = listOf(
-            GameResultDto(playerId = 1L, correctAnswers = 8),
-            GameResultDto(playerId = 2L, correctAnswers = 6),
-            GameResultDto(playerId = 3L, correctAnswers = 5),
-            GameResultDto(playerId = 4L, correctAnswers = 3),
+            GameFinishPlayerResult(playerId = 1L, correctAnswers = 8),
+            GameFinishPlayerResult(playerId = 2L, correctAnswers = 6),
+            GameFinishPlayerResult(playerId = 3L, correctAnswers = 5),
+            GameFinishPlayerResult(playerId = 4L, correctAnswers = 3),
         ),
         myPlayerId = 1L,
         onNavigateHome = {}

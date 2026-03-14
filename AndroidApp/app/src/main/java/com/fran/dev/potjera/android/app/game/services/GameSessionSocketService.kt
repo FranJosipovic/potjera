@@ -3,15 +3,44 @@ package com.fran.dev.potjera.android.app.game.services
 import android.util.Log
 import com.fran.dev.potjera.android.app.game.models.dto.CoinBoosterStartHunterDto
 import com.fran.dev.potjera.android.app.game.models.dto.CoinBoosterStartPlayerDto
+import com.fran.dev.potjera.android.app.game.models.dto.GameSessionEventDto
 import com.fran.dev.potjera.android.app.game.models.dto.board.AnswerRevealDto
 import com.fran.dev.potjera.android.app.game.models.dto.board.BoardPhaseFinishedDto
+import com.fran.dev.potjera.android.app.game.models.dto.board.BoardPhaseStartingDto
+import com.fran.dev.potjera.android.app.game.models.dto.board.BoardQuestionDto
 import com.fran.dev.potjera.android.app.game.models.dto.board.HunterAnsweredQuestionDto
 import com.fran.dev.potjera.android.app.game.models.dto.board.MoneyOfferAcceptedDto
 import com.fran.dev.potjera.android.app.game.models.dto.board.MoneyOfferDto
-import com.fran.dev.potjera.android.app.game.models.dto.board.NewBoardQuestionDto
 import com.fran.dev.potjera.android.app.game.models.dto.board.PlayerAnsweredQuestionDto
 import com.fran.dev.potjera.android.app.game.models.dto.board.PlayerCaughtDto
 import com.fran.dev.potjera.android.app.game.models.dto.board.PlayerWonDto
+import com.fran.dev.potjera.android.app.game.models.dto.coinbooster.CoinBoosterFinishedDto
+import com.fran.dev.potjera.android.app.game.models.dto.game.GameResultDto
+import com.fran.dev.potjera.android.app.game.models.dto.hunterphase.HunterAnsweredCorrectDto
+import com.fran.dev.potjera.android.app.game.models.dto.hunterphase.HunterAnsweredWrongDto
+import com.fran.dev.potjera.android.app.game.models.dto.hunterphase.HunterAnsweringNextQuestionDto
+import com.fran.dev.potjera.android.app.game.models.dto.hunterphase.HunterAnsweringPhaseFinishedDto
+import com.fran.dev.potjera.android.app.game.models.dto.hunterphase.HunterAnsweringPhaseStartDto
+import com.fran.dev.potjera.android.app.game.models.dto.hunterphase.HunterAnsweringPhaseSuggestionDto
+import com.fran.dev.potjera.android.app.game.models.dto.hunterphase.HunterTimerPausedDto
+import com.fran.dev.potjera.android.app.game.models.dto.hunterphase.HunterTimerResumedDto
+import com.fran.dev.potjera.android.app.game.models.dto.hunterphase.PlayerCounterAnswerCorrectDto
+import com.fran.dev.potjera.android.app.game.models.dto.hunterphase.PlayerCounterAnswerWrongDto
+import com.fran.dev.potjera.android.app.game.models.dto.playersansweringphase.PlayerSignedInDto
+import com.fran.dev.potjera.android.app.game.models.dto.playersansweringphase.PlayersAnsweringCorrectDto
+import com.fran.dev.potjera.android.app.game.models.dto.playersansweringphase.PlayersAnsweringFinishedDto
+import com.fran.dev.potjera.android.app.game.models.dto.playersansweringphase.PlayersAnsweringNextQuestionDto
+import com.fran.dev.potjera.android.app.game.models.dto.playersansweringphase.PlayersAnsweringStartDto
+import com.fran.dev.potjera.android.app.game.models.dto.playersansweringphase.PlayersAnsweringWrongDto
+import com.fran.dev.potjera.android.app.game.models.event.GameSessionSocketEvent
+import com.fran.dev.potjera.android.app.game.models.payload.BoardAnswerPayload
+import com.fran.dev.potjera.android.app.game.models.payload.FinishCoinBoosterPayload
+import com.fran.dev.potjera.android.app.game.models.payload.HunterAnsweringAnswerPayload
+import com.fran.dev.potjera.android.app.game.models.payload.HunterSuggestionPayload
+import com.fran.dev.potjera.android.app.game.models.payload.MoneyOfferPayload
+import com.fran.dev.potjera.android.app.game.models.payload.MoneyOfferResponsePayload
+import com.fran.dev.potjera.android.app.game.models.payload.PlayerCounterAnswerPayload
+import com.fran.dev.potjera.android.app.game.models.payload.PlayersAnsweringAnswerPayload
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -143,8 +172,8 @@ class GameSessionSocketService @Inject constructor() {
             }
 
             "NEW_BOARD_QUESTION" -> {
-                val dto: NewBoardQuestionDto = gson.fromJson(
-                    gson.toJson(event.payload), NewBoardQuestionDto::class.java
+                val dto: BoardQuestionDto = gson.fromJson(
+                    gson.toJson(event.payload), BoardQuestionDto::class.java
                 )
                 GameSessionSocketEvent.NewBoardQuestionEvent(dto)
             }
@@ -396,17 +425,17 @@ class GameSessionSocketService @Inject constructor() {
     }
 
     fun sendHunterAnsweringAnswer(gameSessionId: String, answer: String) {
-        val payload = gson.toJson(HunterAnsweringHunterAnswerPayload(answer))
+        val payload = gson.toJson(HunterAnsweringAnswerPayload(answer))
         send(gameSessionId, "hunter-answering/answer", payload)
     }
 
     fun sendPlayerCounterAnswer(gameSessionId: String, answer: String) {
-        val payload = gson.toJson(PlayersAnsweringCounterAnswerPayload(answer))
+        val payload = gson.toJson(PlayerCounterAnswerPayload(answer))
         send(gameSessionId, "hunter-answering/counter-answer", payload)
     }
 
-    fun sendSuggestion(gameSessionId: String, suggestion: String){
-        val payload = gson.toJson(HunterAnsweringPhaseSuggestionPayload(suggestion))
+    fun sendSuggestion(gameSessionId: String, suggestion: String) {
+        val payload = gson.toJson(HunterSuggestionPayload(suggestion))
         send(gameSessionId, "hunter-answering/suggestion", payload)
     }
 
@@ -427,251 +456,3 @@ class GameSessionSocketService @Inject constructor() {
         stompClient?.disconnect()
     }
 }
-
-data class HunterAnsweringHunterAnswerPayload(val answer: String)
-data class PlayersAnsweringCounterAnswerPayload(val answer: String)
-
-
-// ── Events ───────────────────────────────────────────────────────────────────
-
-sealed class GameSessionSocketEvent {
-    data class CoinBoosterStartedHunterEvent(val dto: CoinBoosterStartHunterDto) :
-        GameSessionSocketEvent()
-
-    data class CoinBoosterStartedPlayerEvent(val dto: CoinBoosterStartPlayerDto) :
-        GameSessionSocketEvent()
-
-    data class CoinBoosterFinishedEvent(val payload: CoinBoosterFinishedDto) :
-        GameSessionSocketEvent()
-
-    data class GameFinishedEvent(val results: List<GameResultDto>) : GameSessionSocketEvent()
-    data class PlayerLeftEvent(val playerId: Long) : GameSessionSocketEvent()
-
-    // board phase — BOARD_PHASE_STARTING and NEXT_PLAYER share same shape
-    data class BoardPhaseStartingEvent(val dto: BoardPhaseStartingDto) : GameSessionSocketEvent()
-    data class MoneyOfferEvent(val dto: MoneyOfferDto) : GameSessionSocketEvent()
-    data class MoneyOfferAcceptedEvent(val dto: MoneyOfferAcceptedDto) : GameSessionSocketEvent()
-
-    data class NewBoardQuestionEvent(val dto: NewBoardQuestionDto) : GameSessionSocketEvent()
-
-    data class HunterAnsweredQuestionEvent(val dto: HunterAnsweredQuestionDto) :
-        GameSessionSocketEvent()
-
-    data class PlayerAnsweredQuestionEvent(val dto: PlayerAnsweredQuestionDto) :
-        GameSessionSocketEvent()
-
-    data class AnswerRevealedEvent(val dto: AnswerRevealDto) : GameSessionSocketEvent()
-    data class PlayerWonEvent(val dto: PlayerWonDto) : GameSessionSocketEvent()
-    data class PlayerCaughtEvent(val dto: PlayerCaughtDto) : GameSessionSocketEvent()
-    data class BoardPhaseFinishedEvent(val dto: BoardPhaseFinishedDto) :
-        GameSessionSocketEvent()
-
-    // players answering phase
-    data class PlayersAnsweringPhaseStartEvent(val dto: PlayersAnsweringStartDto) :
-        GameSessionSocketEvent()
-
-    data class PlayerBuzzedInEvent(val dto: PlayerSignedInDto) : GameSessionSocketEvent()
-    data class PlayersAnsweringCorrectEvent(val dto: PlayersAnsweringCorrectDto) :
-        GameSessionSocketEvent()
-
-    data class PlayersAnsweringWrongEvent(val dto: PlayersAnsweringWrongDto) :
-        GameSessionSocketEvent()
-
-    data class PlayersAnsweringNextQuestionEvent(val dto: PlayersAnsweringNextQuestionDto) :
-        GameSessionSocketEvent()
-
-    data class PlayersAnsweringPhaseFinishedEvent(val dto: PlayersAnsweringFinishedDto) :
-        GameSessionSocketEvent()
-
-    // hunter answering phase
-    data class HunterAnsweringPhaseStartEvent(val dto: HunterAnsweringPhaseStartDto) :
-        GameSessionSocketEvent()
-
-    data class HunterAnsweredCorrectEvent(val dto: HunterAnsweredCorrectDto) :
-        GameSessionSocketEvent()
-
-    data class HunterAnsweredWrongEvent(val dto: HunterAnsweredWrongDto) : GameSessionSocketEvent()
-
-    data class PlayerCounterAnswerCorrectEvent(val dto: PlayerCounterAnswerCorrectDto) :
-        GameSessionSocketEvent()
-
-    data class PlayerCounterAnswerWrongEvent(val dto: PlayerCounterAnswerWrongDto) :
-        GameSessionSocketEvent()
-
-    data class HunterAnsweringNextQuestionEvent(val dto: HunterAnsweringNextQuestionDto) :
-        GameSessionSocketEvent()
-
-    data class HunterAnsweringPhaseFinishedEvent(val dto: HunterAnsweringPhaseFinishedDto) :
-        GameSessionSocketEvent()
-
-    data class HunterAnsweringSuggestionEvent(val dto: HunterAnsweringPhaseSuggestionDto) :
-        GameSessionSocketEvent()
-
-    data class HunterTimerPausedEvent(val dto: HunterTimerPausedDto) : GameSessionSocketEvent()
-    data class HunterTimerResumedEvent(val dto: HunterTimerResumedDto) : GameSessionSocketEvent()
-}
-
-// ── Received from server (Dto) ────────────────────────────────────────────
-
-data class HunterTimerPausedDto(
-    val remainingMs: Long
-)
-data class HunterTimerResumedDto(
-    val endTimestamp: Long
-)
-
-data class GameSessionEventDto(val type: String, val payload: Any)
-
-data class HunterAnsweringPhaseSuggestionDto(
-    val sentBy: Long,
-    val suggestion: String,
-    val username: String
-)
-
-data class CoinBoosterFinishedDto(
-    val playerId: Long,
-    val username: String,
-    val moneyWon: Float
-)
-
-data class GameResultDto(
-    val playerId: Long,
-    val correctAnswers: Int
-)
-
-// board phase — now matches BoardPhaseStartingPayload(globalState, boardState)
-data class BoardPhaseStartingDto(
-    val currentPlayerId: Long,
-    val boardState: PlayerVHunterBoardStateDto
-)
-
-data class PlayerVHunterGlobalStateDto(
-    val hunterId: Long,
-    val currentPlayerId: Long,
-    val playersFinishStatus: Map<Long, Float>,
-    val players: Map<Long, String>
-)
-
-data class PlayerVHunterBoardStateDto(
-    val questionsStarted: Boolean,
-    val boardQuestion: BoardQuestionDto?,
-    val hunterAnswer: String?,
-    val playerAnswer: String?,
-    val hunterCorrectAnswers: Int,
-    val playerCorrectAnswers: Int,
-    val playerStartingIndex: Int,
-    val moneyInGame: Float,
-    val boardPhase: String  // maps to BoardPhase enum
-)
-
-data class BoardQuestionDto(
-    val question: String,
-    val choices: List<String>,
-    val correctAnswer: String
-)
-
-
-// PlayersAnsweringPhase
-data class PlayersAnsweringStateDto(
-    val correctAnswers: Int = 0,
-    val signedPlayerId: Long? = null,
-    val currentQuestionIndex: Int = 0
-)
-
-data class PlayersAnsweringQuestion(
-    val question: String,
-    val answer: String,
-    val aliases: List<String>
-)
-
-data class PlayersAnsweringStartDto(
-    val playersAnsweringState: PlayersAnsweringStateDto,
-    val question: PlayersAnsweringQuestion,
-    val questionNum: Int
-)
-
-// PLAYER_SIGNED_IN
-data class PlayerSignedInDto(
-    val playerId: Long
-)
-
-// PLAYERS_ANSWERING_CORRECT
-data class PlayersAnsweringCorrectDto(
-    val playerId: Long,
-    val correctAnswer: String
-)
-
-// PLAYERS_ANSWERING_WRONG
-data class PlayersAnsweringWrongDto(
-    val playerId: Long,
-    val correctAnswer: String
-)
-
-// PLAYERS_ANSWERING_NEXT_QUESTION
-data class PlayersAnsweringNextQuestionDto(
-    val question: PlayersAnsweringQuestion,
-    val questionNum: Int,
-    val total: Int
-)
-
-// PLAYERS_ANSWERING_FINISHED
-data class PlayersAnsweringFinishedDto(
-    val correctAnswers: Int,
-    val playerIds: List<Long>
-)
-
-//Hunter phase
-data class HunterAnsweringStateDto(
-    val hunterCorrectAnswers: Int = 0,
-    val totalStepsToReach: Int = 0,
-    val currentQuestionIndex: Int = 0,
-    val hunterJustWrong: Boolean = false
-)
-
-class PlayersAnsweringQuestionDto {
-    var question: String? = null
-    var answer: String? = null
-    var aliases: MutableList<String?>? = null
-}
-
-data class HunterAnsweringPhaseStartDto(
-    val hunterAnsweringState: HunterAnsweringStateDto,
-    val question: PlayersAnsweringQuestionDto,
-    val endTimestamp: Long
-)
-
-data class HunterAnsweredCorrectDto(
-    val correctAnswer: String
-)
-
-data class HunterAnsweredWrongDto(
-    val correctAnswer: String
-)
-
-data class PlayerCounterAnswerCorrectDto(
-    val correctAnswer: String
-)
-
-data class PlayerCounterAnswerWrongDto(
-    val correctAnswer: String
-)
-
-data class HunterAnsweringNextQuestionDto(
-    val question: String
-)
-
-data class HunterAnsweringPhaseFinishedDto(
-    val hunterWon: Boolean,
-)
-
-// ── Sent to server (Payload) ──────────────────────────────────────────────
-
-data class MoneyOfferPayload(val higherOffer: Float, val lowerOffer: Float)
-data class MoneyOfferResponsePayload(val offerAccepted: Float)
-data class BoardAnswerPayload(val answer: String)
-data class FinishCoinBoosterPayload(val correctAnswers: Int)
-data class PlayersAnsweringAnswerPayload(val answer: String)
-
-data class HunterAnsweringPhaseSuggestionPayload(val suggestion: String)
-
-// ── Helpers ────────────────────────────────────────────────────────────────
