@@ -52,7 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.fran.dev.potjera.android.app.room.api.RoomDetailsResponse
+import com.fran.dev.potjera.android.app.room.model.RoomDetailsResponse
 import com.fran.dev.potjera.android.app.ui.theme.*
 
 

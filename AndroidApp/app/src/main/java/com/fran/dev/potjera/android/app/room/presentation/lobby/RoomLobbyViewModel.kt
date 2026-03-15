@@ -4,12 +4,12 @@ import android.content.SharedPreferences
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fran.dev.potjera.android.app.room.api.RoomDetailsResponse
-import com.fran.dev.potjera.android.app.room.api.RoomPlayerDTO
-import com.fran.dev.potjera.android.app.room.model.event.LobbyEvent
+import com.fran.dev.potjera.android.app.room.model.LobbyEvent
+import com.fran.dev.potjera.android.app.room.model.RoomDetailsResponse
+import com.fran.dev.potjera.android.app.room.model.RoomPlayerDTO
+import com.fran.dev.potjera.android.app.room.model.RoomSocketEvent
 import com.fran.dev.potjera.android.app.room.repository.RoomRepository
 import com.fran.dev.potjera.android.app.room.repository.RoomResult
-import com.fran.dev.potjera.android.app.room.services.RoomSocketEvent
 import com.fran.dev.potjera.android.app.room.services.RoomSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel

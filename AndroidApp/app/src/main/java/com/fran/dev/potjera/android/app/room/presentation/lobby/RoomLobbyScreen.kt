@@ -44,8 +44,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import com.fran.dev.potjera.android.app.room.api.RoomPlayerDTO
-import com.fran.dev.potjera.android.app.room.model.event.LobbyEvent
+import com.fran.dev.potjera.android.app.room.model.LobbyEvent
+import com.fran.dev.potjera.android.app.room.model.RoomPlayerDTO
 import com.fran.dev.potjera.android.app.ui.theme.BgCard
 import com.fran.dev.potjera.android.app.ui.theme.BgCardBorder
 import com.fran.dev.potjera.android.app.ui.theme.BgDeep
@@ -57,10 +57,6 @@ import com.fran.dev.potjera.android.app.ui.theme.GradPrizeCard
 import com.fran.dev.potjera.android.app.ui.theme.Purple
 import com.fran.dev.potjera.android.app.ui.theme.TextMuted
 import com.fran.dev.potjera.android.app.ui.theme.White
-
-// ─────────────────────────────────────────────────────────────────────────────
-// RoomLobbyScreen
-// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 fun RoomLobbyScreen(

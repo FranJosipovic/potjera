@@ -1,13 +1,13 @@
 package com.fran.dev.potjera.android.app.room.repository
 
 import android.util.Log
-import com.fran.dev.potjera.android.app.room.api.AssignCaptainRequest
-import com.fran.dev.potjera.android.app.room.api.AssignHunterRequest
-import com.fran.dev.potjera.android.app.room.api.CreateRoomRequest
-import com.fran.dev.potjera.android.app.room.api.CreateRoomResponse
-import com.fran.dev.potjera.android.app.room.api.JoinPrivateRoomRequest
 import com.fran.dev.potjera.android.app.room.api.RoomApi
-import com.fran.dev.potjera.android.app.room.api.RoomDetailsResponse
+import com.fran.dev.potjera.android.app.room.model.AssignCaptainRequest
+import com.fran.dev.potjera.android.app.room.model.AssignHunterRequest
+import com.fran.dev.potjera.android.app.room.model.CreateRoomRequest
+import com.fran.dev.potjera.android.app.room.model.CreateRoomResponse
+import com.fran.dev.potjera.android.app.room.model.JoinPrivateRoomRequest
+import com.fran.dev.potjera.android.app.room.model.RoomDetailsResponse
 import retrofit2.HttpException
 
 class RoomRepositoryImpl(

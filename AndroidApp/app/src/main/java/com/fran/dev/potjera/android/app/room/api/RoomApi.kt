@@ -1,35 +1,16 @@
 package com.fran.dev.potjera.android.app.room.api
 
-import com.fran.dev.potjera.android.app.domain.models.enums.RoomStatus
+import com.fran.dev.potjera.android.app.room.model.AssignCaptainRequest
+import com.fran.dev.potjera.android.app.room.model.AssignHunterRequest
+import com.fran.dev.potjera.android.app.room.model.CreateRoomRequest
+import com.fran.dev.potjera.android.app.room.model.CreateRoomResponse
+import com.fran.dev.potjera.android.app.room.model.JoinPrivateRoomRequest
+import com.fran.dev.potjera.android.app.room.model.RoomDetailsResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 
-data class RoomPlayerDTO(
-    val playerId: Long,
-    val username: String,
-    val rank: Int,
-    val isHost: Boolean,
-    val isReady: Boolean,
-    val isHunter: Boolean,
-    val isCaptain: Boolean
-)
-
-data class RoomDetailsResponse(
-    val id: String,
-    val code: String,
-    val status: String,
-    val maxPlayers: Int,
-    val currentPlayers: Int,
-    val createdAt: String,
-    val players: List<RoomPlayerDTO>,
-    val hunter: RoomPlayerDTO?
-)
-
-data class JoinPrivateRoomRequest(
-    val code: String
-)
 
 interface RoomApi {
     @POST("rooms/create")
@@ -74,17 +55,3 @@ interface RoomApi {
     @GET("rooms/search/{name}")
     suspend fun searchByName(@Path("name") name: String): RoomDetailsResponse
 }
-
-data class AssignHunterRequest(val hunterId: Long)
-data class AssignCaptainRequest(val captainId: Long)
-data class CreateRoomRequest(
-    val isPrivate: Boolean,
-)
-
-data class CreateRoomResponse(
-    val roomId: String,
-    val code: String?,        // null if public
-    val status: RoomStatus,
-    val maxPlayers: Int,
-    val createdAt: String
-)

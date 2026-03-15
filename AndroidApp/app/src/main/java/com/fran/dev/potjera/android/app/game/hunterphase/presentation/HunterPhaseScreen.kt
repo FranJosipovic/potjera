@@ -41,10 +41,12 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.fran.dev.potjera.android.app.game.hunterphase.presentation.components.SpectatorBanner
+import com.fran.dev.potjera.android.app.game.hunterphase.presentation.components.SuggestionsPanel
+import com.fran.dev.potjera.android.app.game.hunterphase.presentation.components.TeamMemberItem
 import com.fran.dev.potjera.android.app.game.models.SuggestionItem
 import com.fran.dev.potjera.android.app.game.models.state.HunterAnsweringPhaseState
 import com.fran.dev.potjera.android.app.game.models.state.PlayersAnsweringPlayer
@@ -53,7 +55,6 @@ import com.fran.dev.potjera.android.app.ui.theme.BgCardBorder
 import com.fran.dev.potjera.android.app.ui.theme.BgDeep
 import com.fran.dev.potjera.android.app.ui.theme.BgInput
 import com.fran.dev.potjera.android.app.ui.theme.Cyan
-import com.fran.dev.potjera.android.app.ui.theme.GradButtonDim
 import com.fran.dev.potjera.android.app.ui.theme.Green
 import com.fran.dev.potjera.android.app.ui.theme.Purple
 import com.fran.dev.potjera.android.app.ui.theme.Red
@@ -409,7 +410,6 @@ fun HunterPhaseScreen(
                         PlayerSuggestionInput(
                             input = suggestionInput,
                             suggestions = suggestions,
-                            inputEnabled = true,
                             onChange = { suggestionInput = it },
                             onSend = {
                                 if (suggestionInput.isNotBlank()) {
@@ -696,7 +696,6 @@ private fun CaptainSection(
 private fun PlayerSuggestionInput(
     input: String,
     suggestions: List<SuggestionItem>,
-    inputEnabled: Boolean,
     onChange: (String) -> Unit,
     onSend: () -> Unit,
 ) {
@@ -736,23 +735,22 @@ private fun PlayerSuggestionInput(
             ) {
                 BasicTextField(
                     value = input,
-                    onValueChange = if (inputEnabled) onChange else { _ -> },
+                    onValueChange = onChange,
                     modifier = Modifier
                         .weight(1f)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(if (inputEnabled) BgInput else BgInput.copy(alpha = 0.5f))
+                        .background(BgInput)
                         .border(1.dp, BgCardBorder, RoundedCornerShape(10.dp))
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                     textStyle = TextStyle(
-                        color = if (inputEnabled) White else TextMuted,
+                        color = White,
                         fontSize = 15.sp
                     ),
                     cursorBrush = SolidColor(Purple),
                     singleLine = true,
-                    enabled = inputEnabled,
                     decorationBox = { inner ->
                         if (input.isEmpty()) Text(
-                            if (inputEnabled) "Your suggestion…" else "Waiting…",
+                            text = "Your suggestion…",
                             color = TextMuted,
                             fontSize = 15.sp
                         )
@@ -763,8 +761,8 @@ private fun PlayerSuggestionInput(
                     modifier = Modifier
                         .size(46.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(if (inputEnabled) Purple else Purple.copy(alpha = 0.3f))
-                        .clickable(enabled = inputEnabled, onClick = onSend),
+                        .background(Purple)
+                        .clickable(onClick = onSend),
                     contentAlignment = Alignment.Center
                 ) {
                     Text("➤", color = White, fontSize = 18.sp)
@@ -777,131 +775,7 @@ private fun PlayerSuggestionInput(
         }
     }
 }
-//endregion
 
-//region ── Shared suggestions panel ──────────────────────────────────────────
-@Composable
-private fun SuggestionsPanel(suggestions: List<SuggestionItem>) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(BgCard)
-            .border(1.dp, Purple.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text("💬", fontSize = 14.sp)
-            Text(
-                "TEAM SUGGESTIONS",
-                color = Purple,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.5.sp
-            )
-        }
-        suggestions.forEach { s ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(BgDeep)
-                    .border(1.dp, BgCardBorder, RoundedCornerShape(10.dp))
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(28.dp)
-                        .clip(CircleShape)
-                        .background(Purple.copy(alpha = 0.2f))
-                        .border(1.dp, Purple.copy(alpha = 0.4f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) { Text("👤", fontSize = 12.sp) }
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(s.username, color = TextMuted, fontSize = 11.sp)
-                    Text(
-                        s.suggestion,
-                        color = White,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-        }
-    }
-}
-//endregion
-
-//region ── Spectator ──────────────────────────────────────────────────────────
-@Composable
-private fun SpectatorBanner() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(64.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .background(GradButtonDim),
-        contentAlignment = Alignment.Center
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text("👁️", fontSize = 20.sp)
-            Text(
-                "Spectating…",
-                color = TextMuted,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-    }
-}
-//endregion
-
-//region ── Player avatar in the players row ───────────────────────────────────
-@Composable
-private fun TeamMemberItem(
-    member: PlayersAnsweringPlayer,
-    isCaptain: Boolean,
-) {
-    val borderColor = if (isCaptain) Cyan else BgCardBorder
-    val bgColor = if (isCaptain) Cyan.copy(alpha = 0.1f) else BgDeep
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(52.dp)
-                .clip(CircleShape)
-                .background(bgColor)
-                .border(2.dp, borderColor, CircleShape),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(member.emoji, fontSize = 22.sp)
-        }
-        Text(
-            member.name.take(10),
-            color = White,
-            fontSize = 10.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
-        )
-        if (isCaptain) {
-            Text("👑 Captain", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
-        }
-    }
-}
-//endregion
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Previews

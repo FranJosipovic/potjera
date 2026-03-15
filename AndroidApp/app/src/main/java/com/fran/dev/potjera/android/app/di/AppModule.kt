@@ -10,6 +10,8 @@ import com.fran.dev.potjera.android.app.auth.authenticators.TokenAuthenticator
 import com.fran.dev.potjera.android.app.auth.interceptors.AuthInterceptor
 import com.fran.dev.potjera.android.app.auth.repository.AuthRepository
 import com.fran.dev.potjera.android.app.auth.repository.AuthRepositoryImpl
+import com.fran.dev.potjera.android.app.game.repository.GameSessionRepository
+import com.fran.dev.potjera.android.app.game.services.GameSessionSocketService
 import com.fran.dev.potjera.android.app.room.api.RoomApi
 import com.fran.dev.potjera.android.app.room.repository.RoomRepository
 import com.fran.dev.potjera.android.app.room.repository.RoomRepositoryImpl
@@ -112,6 +114,12 @@ object AppModule {
     @Singleton
     fun provideRoomRepository(api: RoomApi): RoomRepository {
         return RoomRepositoryImpl(api)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGameSessionRepository(socketService: GameSessionSocketService): GameSessionRepository {
+        return GameSessionRepository(socketService)
     }
 }
 

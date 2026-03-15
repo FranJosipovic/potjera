@@ -1,7 +1,7 @@
 package com.fran.dev.potjera.android.app.room.repository
 
-import com.fran.dev.potjera.android.app.room.api.CreateRoomResponse
-import com.fran.dev.potjera.android.app.room.api.RoomDetailsResponse
+import com.fran.dev.potjera.android.app.room.model.CreateRoomResponse
+import com.fran.dev.potjera.android.app.room.model.RoomDetailsResponse
 
 interface RoomRepository {
     suspend fun createRoom(isPrivate: Boolean): RoomResult<CreateRoomResponse>
@@ -23,5 +23,5 @@ sealed class RoomResult<out T> {
     class AlreadyInRoom : RoomResult<Nothing>()
     class RoomFull : RoomResult<Nothing>()
     class UnknownError : RoomResult<Nothing>()
-    class Forbidden : RoomResult<Nothing>()   // ← add this
+    class Forbidden : RoomResult<Nothing>()
 }

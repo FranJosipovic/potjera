@@ -2,7 +2,7 @@ package com.fran.dev.potjera.android.app.room.presentation.join
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fran.dev.potjera.android.app.room.api.RoomDetailsResponse
+import com.fran.dev.potjera.android.app.room.model.RoomDetailsResponse
 import com.fran.dev.potjera.android.app.room.repository.RoomRepository
 import com.fran.dev.potjera.android.app.room.repository.RoomResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlin.collections.emptyList
 
 @HiltViewModel
 class JoinRoomViewModel @Inject constructor(

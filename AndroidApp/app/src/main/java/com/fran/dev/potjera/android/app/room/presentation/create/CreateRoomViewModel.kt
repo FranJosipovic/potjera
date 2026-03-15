@@ -2,7 +2,7 @@ package com.fran.dev.potjera.android.app.room.presentation.create
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fran.dev.potjera.android.app.room.api.CreateRoomResponse
+import com.fran.dev.potjera.android.app.room.model.CreateRoomResponse
 import com.fran.dev.potjera.android.app.room.repository.RoomRepository
 import com.fran.dev.potjera.android.app.room.repository.RoomResult
 import dagger.hilt.android.lifecycle.HiltViewModel

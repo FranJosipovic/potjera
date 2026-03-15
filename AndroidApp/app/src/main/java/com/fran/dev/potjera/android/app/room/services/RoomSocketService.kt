@@ -1,6 +1,14 @@
 package com.fran.dev.potjera.android.app.room.services
 
 import android.util.Log
+import com.fran.dev.potjera.android.app.room.model.CaptainChangedDto
+import com.fran.dev.potjera.android.app.room.model.GameStartingDto
+import com.fran.dev.potjera.android.app.room.model.HunterChangedDto
+import com.fran.dev.potjera.android.app.room.model.PlayerJoinedDto
+import com.fran.dev.potjera.android.app.room.model.PlayerLeftRoomDto
+import com.fran.dev.potjera.android.app.room.model.RoomClosedDto
+import com.fran.dev.potjera.android.app.room.model.RoomEventDto
+import com.fran.dev.potjera.android.app.room.model.RoomSocketEvent
 import com.google.gson.Gson
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
@@ -17,6 +25,7 @@ import ua.naiksoftware.stomp.Stomp
 import ua.naiksoftware.stomp.StompClient
 import ua.naiksoftware.stomp.dto.LifecycleEvent
 import ua.naiksoftware.stomp.dto.StompHeader
+import kotlin.jvm.java
 
 @Singleton
 class RoomSocketService @Inject constructor() {
@@ -76,14 +85,6 @@ class RoomSocketService @Inject constructor() {
                 RoomSocketEvent.PlayerJoined(payload)
             }
 
-//            "HUNTER_CHANGED" -> {
-//                val payload = gson.fromJson(
-//                    gson.toJson(event.payload),
-//                    PlayerJoinedDto::class.java
-//                )
-//                RoomSocketEvent.HunterChanged(payload)
-//            }
-
             "GAME_STARTING" -> {
                 val payload = gson.fromJson(  // ← fix: use gson.toJson first
                     gson.toJson(event.payload),
@@ -139,49 +140,4 @@ class RoomSocketService @Inject constructor() {
         compositeDisposable.clear()
         stompClient?.disconnect()
     }
-}
-
-data class RoomEventDto(
-    val type: String,
-    val payload: Any
-)
-
-data class PlayerJoinedDto(
-    val playerId: Long,
-    val username: String,
-    val isHunter: Boolean,
-    val isReady: Boolean,
-    val isCaptain: Boolean,
-    val rank: Int
-)
-
-data class GameStartingDto(
-    val gameSessionId: String,
-    val message: String
-)
-
-data class HunterChangedDto(
-    val playerId: Long
-)
-
-data class CaptainChangedDto(
-    val playerId: Long
-)
-
-data class PlayerLeftRoomDto(
-    val playerId: Long,
-    val newHunterId: Long?
-)
-
-data class RoomClosedDto(
-    val reason: String
-)
-
-sealed class RoomSocketEvent {
-    data class PlayerJoined(val player: PlayerJoinedDto) : RoomSocketEvent()
-    data class GameStarting(val payload: GameStartingDto) : RoomSocketEvent()
-    data class HunterChanged(val payload: HunterChangedDto) : RoomSocketEvent()
-    data class CaptainChanged(val payload: CaptainChangedDto) : RoomSocketEvent()
-    data class PlayerLeftRoom(val payLoad: PlayerLeftRoomDto) : RoomSocketEvent()
-    data class RoomClosed(val payload: RoomClosedDto): RoomSocketEvent()
 }

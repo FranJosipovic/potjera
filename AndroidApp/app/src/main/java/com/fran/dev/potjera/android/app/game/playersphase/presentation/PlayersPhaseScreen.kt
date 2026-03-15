@@ -520,7 +520,7 @@ fun PlayersPhaseScreen(
 
 // ── Team member avatar + label ────────────────────────────────────────────────
 @Composable
-fun TeamMemberItem(member: PlayersAnsweringPlayer, currentAnsweringPlayerId: Long? = null) {
+private fun TeamMemberItem(member: PlayersAnsweringPlayer, currentAnsweringPlayerId: Long? = null) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp)

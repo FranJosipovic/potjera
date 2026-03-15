@@ -49,16 +49,7 @@ import com.fran.dev.potjera.android.app.domain.models.user.User
 import com.fran.dev.potjera.android.app.ui.components.LoadingButton
 import com.fran.dev.potjera.android.app.ui.theme.*
 
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Entry fee options
-// ─────────────────────────────────────────────────────────────────────────────
-
 private val entryFeeOptions = listOf(100, 250, 500, 1000)
-
-// ─────────────────────────────────────────────────────────────────────────────
-// CreateRoomScreen
-// ─────────────────────────────────────────────────────────────────────────────
 
 @Composable
 fun CreateRoomScreen(
