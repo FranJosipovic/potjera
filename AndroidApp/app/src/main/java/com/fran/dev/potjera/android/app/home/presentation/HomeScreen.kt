@@ -1,5 +1,6 @@
 package com.fran.dev.potjera.android.app.home.presentation
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -20,11 +21,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,12 +41,27 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fran.dev.potjera.android.app.domain.models.user.User
-import com.fran.dev.potjera.android.app.ui.theme.*
+import com.fran.dev.potjera.android.app.home.presentation.components.DifficultySelector
+import com.fran.dev.potjera.android.app.ui.theme.BgCard
+import com.fran.dev.potjera.android.app.ui.theme.BgCardBorder
+import com.fran.dev.potjera.android.app.ui.theme.BgDeep
+import com.fran.dev.potjera.android.app.ui.theme.Cyan
+import com.fran.dev.potjera.android.app.ui.theme.Gold
+import com.fran.dev.potjera.android.app.ui.theme.GradCoin
+import com.fran.dev.potjera.android.app.ui.theme.GradCreate
+import com.fran.dev.potjera.android.app.ui.theme.GradJoin
+import com.fran.dev.potjera.android.app.ui.theme.Purple
+import com.fran.dev.potjera.android.app.ui.theme.TextMuted
+import com.fran.dev.potjera.android.app.ui.theme.White
 import kotlin.math.roundToInt
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HomeScreen
 // ─────────────────────────────────────────────────────────────────────────────
+
+enum class Mode {
+    NONE, SINGLEPLAYER, MULTIPLAYER
+}
 
 @Composable
 fun HomeScreen(
@@ -54,6 +75,8 @@ fun HomeScreen(
 
     val winRate =
         if (user.gamesPlayed == 0) 0 else ((user.gamesWon.toFloat() / user.gamesPlayed.toFloat()) * 100).roundToInt()
+
+    var modeSelected by remember { mutableStateOf(Mode.NONE) }
 
     Box(
         modifier = modifier
@@ -75,18 +98,47 @@ fun HomeScreen(
             CoinsCard(coins = user.coins)
             GameTitle()
             StatsRow(gamesPlayed = user.gamesPlayed, wins = user.gamesWon, winRate = winRate)
-            GradientButton(
-                text = "Create Room",
-                gradient = GradCreate,
-                iconEmoji = "👥",
-                onClick = onCreateRoom
-            )
-            GradientButton(
-                text = "Join Room",
-                gradient = GradJoin,
-                iconEmoji = "⚡",
-                onClick = onJoinRoom
-            )
+
+            when (modeSelected) {
+                Mode.NONE -> {
+                    GradientButton(
+                        text = "Singleplayer",
+                        gradient = GradCreate,
+                        iconEmoji = "🧠",
+                        onClick = { modeSelected = Mode.SINGLEPLAYER }
+                    )
+                    GradientButton(
+                        text = "Multiplayer",
+                        gradient = GradJoin,
+                        iconEmoji = "⚡",
+                        onClick = { modeSelected = Mode.MULTIPLAYER }
+                    )
+                }
+
+                Mode.SINGLEPLAYER -> {
+                    BackButton(onClick = { modeSelected = Mode.NONE })
+                    DifficultySelector(onSelect = { difficulty ->
+                        Log.d("HomeScreen", "HomeScreen: selected difficulty: $difficulty")
+                    })
+                }
+
+                Mode.MULTIPLAYER -> {
+                    BackButton(onClick = { modeSelected = Mode.NONE })
+                    GradientButton(
+                        text = "Create Room",
+                        gradient = GradCreate,
+                        iconEmoji = "👥",
+                        onClick = onCreateRoom
+                    )
+                    GradientButton(
+                        text = "Join Room",
+                        gradient = GradJoin,
+                        iconEmoji = "⚡",
+                        onClick = onJoinRoom
+                    )
+                }
+            }
+
             LeaderboardCard(onClick = onLeaderboard)
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -101,6 +153,37 @@ fun HomeScreen(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Back button
+// ─────────────────────────────────────────────────────────────────────────────
+
+@Composable
+private fun BackButton(onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(BgCard)
+            .border(1.dp, BgCardBorder, RoundedCornerShape(12.dp))
+            .noRippleClick(onClick)
+            .padding(horizontal = 14.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Icon(
+            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+            contentDescription = "Back",
+            tint = TextMuted,
+            modifier = Modifier.size(18.dp)
+        )
+        Text(
+            text = "Back",
+            color = TextMuted,
+            fontSize = 14.sp,
+            fontWeight = FontWeight.Medium
+        )
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Top bar
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -111,7 +194,6 @@ private fun TopBar(playerName: String, rankNumber: Int, onProfile: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // Avatar + name
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
@@ -142,7 +224,6 @@ private fun TopBar(playerName: String, rankNumber: Int, onProfile: () -> Unit) {
             }
         }
 
-        // Profile icon
         Box(
             modifier = Modifier
                 .size(40.dp)
@@ -193,7 +274,6 @@ private fun CoinsCard(coins: Int) {
                 letterSpacing = 1.sp
             )
         }
-        // Lightning badge
         Box(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
@@ -324,6 +404,7 @@ private fun LeaderboardCard(onClick: () -> Unit) {
         )
     }
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
