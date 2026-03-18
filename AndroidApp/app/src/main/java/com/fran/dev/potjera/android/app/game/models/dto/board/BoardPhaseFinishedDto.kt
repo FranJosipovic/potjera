@@ -1,5 +1,7 @@
 package com.fran.dev.potjera.android.app.game.models.dto.board
 
+import com.fran.dev.potjera.android.app.game.models.GameSessionPlayer
+
 data class BoardPhaseFinishedDto(
-    val message: String
+    val players: Map<Long, GameSessionPlayer>
 )

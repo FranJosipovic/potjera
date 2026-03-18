@@ -1,16 +1,20 @@
 package com.fran.dev.potjera.android.app.game.playervhunter
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fran.dev.potjera.android.app.di.GameSessionRepositoryFactory
 import com.fran.dev.potjera.android.app.game.models.BoardQuestion
 import com.fran.dev.potjera.android.app.game.models.MoneyOffer
 import com.fran.dev.potjera.android.app.game.models.enums.BoardPhase
-import com.fran.dev.potjera.android.app.game.models.event.GameSessionSocketEvent
+import com.fran.dev.potjera.android.app.game.models.event.GameSessionEvent
 import com.fran.dev.potjera.android.app.game.models.state.PlayerVHunterBoardState
+import com.fran.dev.potjera.android.app.game.repository.Difficulty
 import com.fran.dev.potjera.android.app.game.repository.GameSessionRepository
 import com.fran.dev.potjera.android.app.game.toState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,8 +28,15 @@ import kotlinx.coroutines.launch
  */
 @HiltViewModel
 class BoardViewModel @Inject constructor(
-    private val repository: GameSessionRepository
+    private val repositoryFactory: GameSessionRepositoryFactory
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "BoardViewModel"
+    }
+
+    private var eventsJob: Job? = null
+    private lateinit var repository: GameSessionRepository
 
     // ── State ─────────────────────────────────────────────────────────────────
 
@@ -38,7 +49,6 @@ class BoardViewModel @Inject constructor(
     private val _currentPlayerId = MutableStateFlow<Long?>(null)
     val currentPlayerId: StateFlow<Long?> = _currentPlayerId.asStateFlow()
 
-    // one-shot events (player won / caught / board finished) for dialogs
     private val _boardEvent = MutableStateFlow<BoardEvent?>(null)
     val boardEvent: StateFlow<BoardEvent?> = _boardEvent.asStateFlow()
 
@@ -49,76 +59,90 @@ class BoardViewModel @Inject constructor(
 
     // ── Init ──────────────────────────────────────────────────────────────────
 
-    init {
-        viewModelScope.launch {
+    fun init(gameSessionId: String, difficulty: Difficulty?, isHunter: Boolean) {
+        Log.d(TAG, "init: gameSessionId=$gameSessionId difficulty=$difficulty isHunter=$isHunter")
+        this.gameSessionId = gameSessionId
+        this.isHunter = isHunter
+        repository = repositoryFactory.get(difficulty)
+
+        eventsJob?.cancel()
+        eventsJob = viewModelScope.launch {
             repository.events.collect { event -> handleEvent(event) }
         }
     }
 
-    fun setContext(gameSessionId: String, isHunter: Boolean) {
-        this.gameSessionId = gameSessionId
-        this.isHunter = isHunter
-    }
-
-    // ── Public actions ────────────────────────────────────────────────────────
+    // ── Actions ───────────────────────────────────────────────────────────────
 
     fun sendMoneyOffer(higherOffer: Float, lowerOffer: Float) {
-        repository.sendMoneyOffer(gameSessionId, higherOffer, lowerOffer)
+        Log.d(TAG, "sendMoneyOffer: higher=\$$higherOffer lower=\$$lowerOffer")
+        viewModelScope.launch { repository.sendMoneyOffer(higherOffer, lowerOffer) }
     }
 
     fun sendMoneyOfferResponse(acceptedOffer: Float) {
-        repository.sendMoneyOfferResponse(gameSessionId, acceptedOffer)
+        Log.i(TAG, "sendMoneyOfferResponse: accepted=\$$acceptedOffer")
+        viewModelScope.launch { repository.sendMoneyOfferResponse(acceptedOffer) }
     }
 
     fun sendBoardAnswer(answer: String) {
-        repository.sendBoardAnswer(gameSessionId, answer, isHunter)
+        Log.d(TAG, "sendBoardAnswer: answer=\"$answer\" isHunter=$isHunter")
+        viewModelScope.launch { repository.sendBoardAnswer(answer, isHunter) }
     }
 
     fun consumeBoardEvent() {
+        Log.d(TAG, "consumeBoardEvent: clearing ${_boardEvent.value?.let { it::class.simpleName }}")
         _boardEvent.value = null
     }
 
-    // ── Private ───────────────────────────────────────────────────────────────
+    fun startPlayersAnsweringPhase() {
+        Log.i(TAG, "startPlayersAnsweringPhase")
+        viewModelScope.launch { repository.startPlayersAnsweringPhase() }
+    }
 
-    private fun handleEvent(event: GameSessionSocketEvent) {
+    // ── Event handler ─────────────────────────────────────────────────────────
+
+    private fun handleEvent(event: GameSessionEvent) {
         when (event) {
-            is GameSessionSocketEvent.BoardPhaseStartingEvent -> {
+            is GameSessionEvent.BoardPhaseStartingEvent -> {
+                Log.i(TAG, "BoardPhaseStarting: currentPlayer=${event.dto.currentPlayerId}" +
+                        " moneyInGame=\$${event.dto.boardState.moneyInGame}" +
+                        " phase=${event.dto.boardState.boardPhase}")
                 _currentPlayerId.update { event.dto.currentPlayerId }
                 _boardState.update { event.dto.boardState.toState() }
                 _moneyOffer.update { null }
             }
 
-            is GameSessionSocketEvent.MoneyOfferEvent -> {
+            is GameSessionEvent.MoneyOfferEvent -> {
+                Log.i(TAG, "MoneyOffer: higher=\$${"%.0f".format(event.dto.higherOffer)}" +
+                        " lower=\$${"%.0f".format(event.dto.lowerOffer)}")
                 _moneyOffer.update {
-                    MoneyOffer(
-                        higherOffer = event.dto.higherOffer,
-                        lowerOffer = event.dto.lowerOffer
-                    )
+                    MoneyOffer(higherOffer = event.dto.higherOffer, lowerOffer = event.dto.lowerOffer)
                 }
-                _boardState.update {
-                    PlayerVHunterBoardState(boardPhase = BoardPhase.PLAYER_CHOOSING)
-                }
+                _boardState.update { it?.copy(boardPhase = BoardPhase.PLAYER_CHOOSING) }
             }
 
-            is GameSessionSocketEvent.MoneyOfferAcceptedEvent -> {
+            is GameSessionEvent.MoneyOfferAcceptedEvent -> {
+                Log.i(TAG, "MoneyOfferAccepted: moneyInGame=\$${event.dto.moneyInGame}" +
+                        " playerStartingIndex=${event.dto.playerStartingIndex}")
                 _moneyOffer.update { null }
                 _boardState.update {
                     it?.copy(
-                        boardPhase = BoardPhase.OFFER_ACCEPTED,
+                        boardPhase          = BoardPhase.OFFER_ACCEPTED,
                         playerStartingIndex = event.dto.playerStartingIndex,
-                        moneyInGame = event.dto.moneyInGame
+                        moneyInGame         = event.dto.moneyInGame
                     )
                 }
             }
 
-            is GameSessionSocketEvent.NewBoardQuestionEvent -> {
+            is GameSessionEvent.NewBoardQuestionEvent -> {
+                Log.d(TAG, "NewBoardQuestion: \"${event.dto.question}\"" +
+                        " choices=${event.dto.choices}")
                 _boardState.update {
                     it?.copy(
-                        boardPhase = BoardPhase.QUESTION_READING,
+                        boardPhase       = BoardPhase.QUESTION_READING,
                         questionsStarted = true,
-                        boardQuestion = BoardQuestion(
-                            question = event.dto.question,
-                            choices = event.dto.choices,
+                        boardQuestion    = BoardQuestion(
+                            question      = event.dto.question,
+                            choices       = event.dto.choices,
                             correctAnswer = event.dto.correctAnswer
                         ),
                         playerAnswer = null,
@@ -127,49 +151,52 @@ class BoardViewModel @Inject constructor(
                 }
             }
 
-            is GameSessionSocketEvent.PlayerAnsweredQuestionEvent -> {
+            is GameSessionEvent.PlayerAnsweredQuestionEvent -> {
+                Log.d(TAG, "PlayerAnswered: \"${event.dto.answer}\"")
                 _boardState.update {
                     it?.copy(playerAnswer = event.dto.answer, boardPhase = BoardPhase.ANSWER_GIVEN)
                 }
             }
 
-            is GameSessionSocketEvent.HunterAnsweredQuestionEvent -> {
+            is GameSessionEvent.HunterAnsweredQuestionEvent -> {
+                Log.d(TAG, "HunterAnswered: \"${event.dto.answer}\"")
                 _boardState.update {
                     it?.copy(hunterAnswer = event.dto.answer, boardPhase = BoardPhase.ANSWER_GIVEN)
                 }
             }
 
-            is GameSessionSocketEvent.AnswerRevealedEvent -> {
+            is GameSessionEvent.AnswerRevealedEvent -> {
+                Log.i(TAG, "AnswerRevealed: playerCorrect=${event.dto.playerAnsweredCorrectly}" +
+                        " hunterCorrect=${event.dto.hunterAnsweredCorrectly}")
                 viewModelScope.launch {
                     _boardState.update { it?.copy(boardPhase = BoardPhase.ANSWER_REVEAL) }
                     if (event.dto.playerAnsweredCorrectly) {
-                        delay(1000)
-                        _boardState.update {
-                            it?.copy(playerCorrectAnswers = it.playerCorrectAnswers + 1)
-                        }
+                        delay(1_000)
+                        _boardState.update { it?.copy(playerCorrectAnswers = it.playerCorrectAnswers + 1) }
+                        Log.d(TAG, "AnswerRevealed: playerCorrectAnswers=${_boardState.value?.playerCorrectAnswers}")
                     }
                     if (event.dto.hunterAnsweredCorrectly) {
-                        delay(1000)
-                        _boardState.update {
-                            it?.copy(hunterCorrectAnswers = it.hunterCorrectAnswers + 1)
-                        }
+                        delay(1_000)
+                        _boardState.update { it?.copy(hunterCorrectAnswers = it.hunterCorrectAnswers + 1) }
+                        Log.d(TAG, "AnswerRevealed: hunterCorrectAnswers=${_boardState.value?.hunterCorrectAnswers}")
                     }
                 }
             }
 
-            is GameSessionSocketEvent.PlayerWonEvent -> {
-                val username =
-                    event.dto.playersListUpdated[event.dto.playerWonId]?.playerName ?: ""
+            is GameSessionEvent.PlayerWonEvent -> {
+                val username = event.dto.playersListUpdated[event.dto.playerWonId]?.playerName ?: "unknown"
+                Log.i(TAG, "PlayerWon: $username won \$${event.dto.moneyWon}")
                 _boardEvent.value = BoardEvent.PlayerWon(username, event.dto.moneyWon)
             }
 
-            is GameSessionSocketEvent.PlayerCaughtEvent -> {
-                val username =
-                    event.dto.playersListUpdated[event.dto.playerCaughtId]?.playerName ?: ""
+            is GameSessionEvent.PlayerCaughtEvent -> {
+                val username = event.dto.playersListUpdated[event.dto.playerCaughtId]?.playerName ?: "unknown"
+                Log.i(TAG, "PlayerCaught: $username was caught")
                 _boardEvent.value = BoardEvent.PlayerCaught(username)
             }
 
-            is GameSessionSocketEvent.BoardPhaseFinishedEvent -> {
+            is GameSessionEvent.BoardPhaseFinishedEvent -> {
+                Log.i(TAG, "BoardPhaseFinished")
                 _boardEvent.value = BoardEvent.BoardPhaseFinished
             }
 

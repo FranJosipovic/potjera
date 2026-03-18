@@ -1,6 +1,5 @@
 package com.fran.dev.potjera.android.app.home.presentation
 
-import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -41,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.fran.dev.potjera.android.app.domain.models.user.User
+import com.fran.dev.potjera.android.app.game.repository.Difficulty
 import com.fran.dev.potjera.android.app.home.presentation.components.DifficultySelector
 import com.fran.dev.potjera.android.app.ui.theme.BgCard
 import com.fran.dev.potjera.android.app.ui.theme.BgCardBorder
@@ -71,6 +71,7 @@ fun HomeScreen(
     onJoinRoom: () -> Unit = {},
     onLeaderboard: () -> Unit = {},
     onProfile: () -> Unit = {},
+    onSelect: (difficulty: Difficulty) -> Unit = { }
 ) {
 
     val winRate =
@@ -118,7 +119,7 @@ fun HomeScreen(
                 Mode.SINGLEPLAYER -> {
                     BackButton(onClick = { modeSelected = Mode.NONE })
                     DifficultySelector(onSelect = { difficulty ->
-                        Log.d("HomeScreen", "HomeScreen: selected difficulty: $difficulty")
+                        onSelect(difficulty)
                     })
                 }
 

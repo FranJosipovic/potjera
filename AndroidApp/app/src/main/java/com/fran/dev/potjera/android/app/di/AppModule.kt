@@ -1,6 +1,5 @@
 package com.fran.dev.potjera.android.app.di
 
-import android.R.attr.level
 import android.app.Application
 import android.content.Context.MODE_PRIVATE
 import android.content.SharedPreferences
@@ -10,7 +9,11 @@ import com.fran.dev.potjera.android.app.auth.authenticators.TokenAuthenticator
 import com.fran.dev.potjera.android.app.auth.interceptors.AuthInterceptor
 import com.fran.dev.potjera.android.app.auth.repository.AuthRepository
 import com.fran.dev.potjera.android.app.auth.repository.AuthRepositoryImpl
-import com.fran.dev.potjera.android.app.game.repository.GameSessionRepository
+import com.fran.dev.potjera.android.app.game.api.QuizApi
+import com.fran.dev.potjera.android.app.game.repository.MultiplayerGameSessionRepository
+import com.fran.dev.potjera.android.app.game.repository.QuizRepository
+import com.fran.dev.potjera.android.app.game.repository.QuizRepositoryImpl
+import com.fran.dev.potjera.android.app.game.repository.SingleplayerGameSessionRepository
 import com.fran.dev.potjera.android.app.game.services.GameSessionSocketService
 import com.fran.dev.potjera.android.app.room.api.RoomApi
 import com.fran.dev.potjera.android.app.room.repository.RoomRepository
@@ -78,6 +81,12 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideQuizApi(retrofit: Retrofit): QuizApi {
+        return retrofit.create(QuizApi::class.java)
+    }
+
+    @Provides
+    @Singleton
     fun provideRoomApi(retrofit: Retrofit): RoomApi {
         return retrofit.create(RoomApi::class.java)
     }
@@ -118,8 +127,40 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideGameSessionRepository(socketService: GameSessionSocketService): GameSessionRepository {
-        return GameSessionRepository(socketService)
+    fun provideMultiplayerGameSessionRepository(socketService: GameSessionSocketService): MultiplayerGameSessionRepository {
+        return MultiplayerGameSessionRepository(socketService)
+    }
+
+    @Provides
+    @Singleton
+    fun provideQuizRepository(api: QuizApi): QuizRepository {
+        return QuizRepositoryImpl(
+            api = api
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun provideSingleplayerGameSessionRepository(
+        quizRepository: QuizRepository,
+        prefs: SharedPreferences
+    ): SingleplayerGameSessionRepository {
+        return SingleplayerGameSessionRepository(
+            quizRepository = quizRepository,
+            prefs = prefs
+        )
+    }
+
+    @Provides
+    @Singleton
+    fun provideGameSessionFactory(
+        singleplayerRepository: SingleplayerGameSessionRepository,
+        multiplayerRepository: MultiplayerGameSessionRepository
+    ): GameSessionRepositoryFactory {
+        return GameSessionRepositoryFactory(
+            multiplayer = multiplayerRepository,
+            singleplayer = singleplayerRepository
+        )
     }
 }
 

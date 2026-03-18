@@ -2,7 +2,6 @@ package com.fran.dev.potjera.serverbackend.services;
 
 import com.fran.dev.potjera.potjeradb.enums.GameStage;
 import com.fran.dev.potjera.potjeradb.enums.RoomStatus;
-import com.fran.dev.potjera.potjeradb.models.User;
 import com.fran.dev.potjera.potjeradb.models.playmode.GameSession;
 import com.fran.dev.potjera.potjeradb.models.playmode.Room;
 import com.fran.dev.potjera.potjeradb.repositories.GameSessionRepository;
@@ -241,8 +240,8 @@ public class GameSessionService {
                 new GameSessionEvent("BOARD_PHASE_STARTING", payload)
         );
 
-        logger.info("Board phase started for session {} — firstPlayer: {}, hunter: {}",
-                gameSessionId, firstPlayerId, hunterId);
+        logger.info("Board phase started for session {} — firstPlayer: {}, hunter: {}, moneyInGame: {}, boardPhase: {}",
+                gameSessionId, firstPlayerId, hunterId, firstPlayer.getMoneyWon(), payload);
     }
 
     public void broadcastMoneyOffer(String gameSessionId, Long hunterId, MoneyOfferRequestPayload offer) {
@@ -679,26 +678,27 @@ public class GameSessionService {
 
         logger.info("endBoardPhase: board phase complete for session {}", gameSessionId);
 
+
         messagingTemplate.convertAndSend(
                 "/topic/game-session/" + gameSessionId,
                 new GameSessionEvent("BOARD_PHASE_FINISHED", Map.of(
-                        "message", "BOARD_PHASE_FINISHED"
+                        "players", session.getGameSessionPlayers()
                 ))
         );
 
-        // start players answering phase if at least one player survived
-        boolean anyAlive = session.getGameSessionPlayers()
-                .values()
-                .stream().anyMatch(p -> !p.getIsEliminated() && !p.getIsHunter());
-
-        if (anyAlive) {
-            CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS).execute(() ->
-                    startPlayersAnsweringPhase(gameSessionId)
-            );
-        } else {
-            logger.info("endBoardPhase: all players caught in session {}, no players answering phase", gameSessionId);
-            // TODO: handle all-caught ending
-        }
+//        // start players answering phase if at least one player survived
+//        boolean anyAlive = session.getGameSessionPlayers()
+//                .values()
+//                .stream().anyMatch(p -> !p.getIsEliminated() && !p.getIsHunter());
+//
+//        if (anyAlive) {
+//            CompletableFuture.delayedExecutor(3, TimeUnit.SECONDS).execu te(() ->
+//                    startPlayersAnsweringPhase(gameSessionId)
+//            );
+//        } else {
+//            logger.info("endBoardPhase: all players caught in session {}, no players answering phase", gameSessionId);
+//            // TODO: handle all-caught ending
+//        }
     }
     //endregion
 

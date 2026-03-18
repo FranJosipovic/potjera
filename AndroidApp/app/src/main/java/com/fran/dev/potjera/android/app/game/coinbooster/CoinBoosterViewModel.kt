@@ -2,11 +2,13 @@ package com.fran.dev.potjera.android.app.game.coinbooster
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fran.dev.potjera.android.app.di.GameSessionRepositoryFactory
 import com.fran.dev.potjera.android.app.game.AnswerMatcher
 import com.fran.dev.potjera.android.app.game.models.CoinBoosterPlayerFinishInfo
 import com.fran.dev.potjera.android.app.game.models.CoinBoosterQuestion
-import com.fran.dev.potjera.android.app.game.models.event.GameSessionSocketEvent
+import com.fran.dev.potjera.android.app.game.models.event.GameSessionEvent
 import com.fran.dev.potjera.android.app.game.models.state.CoinBoosterPlayerState
+import com.fran.dev.potjera.android.app.game.repository.Difficulty
 import com.fran.dev.potjera.android.app.game.repository.GameSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
@@ -18,7 +20,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.collections.plus
 
 /**
  * Owns: coin booster questions, timer, per-player correct-answer count,
@@ -29,8 +30,23 @@ import kotlin.collections.plus
  */
 @HiltViewModel
 class CoinBoosterViewModel @Inject constructor(
-    private val repository: GameSessionRepository
+    private val repositoryFactory: GameSessionRepositoryFactory
 ) : ViewModel() {
+
+    private lateinit var repository: GameSessionRepository
+
+    fun init(gameSessionId: String, difficulty: Difficulty?) {
+
+        this.gameSessionId = gameSessionId
+
+        repository = repositoryFactory.get(difficulty)
+
+        viewModelScope.launch {
+            repository.events.collect { event ->
+                handleEvent(event)
+            }
+        }
+    }
 
     // ── State ─────────────────────────────────────────────────────────────────
 
@@ -63,19 +79,6 @@ class CoinBoosterViewModel @Inject constructor(
     private var timerJob: Job? = null
     private var gameSessionId: String = ""
 
-    // ── Init ──────────────────────────────────────────────────────────────────
-
-    init {
-        viewModelScope.launch {
-            repository.events.collect { event ->
-                handleEvent(event)
-            }
-        }
-    }
-
-    fun setGameSessionId(id: String) {
-        gameSessionId = id
-    }
 
     // ── Public actions ────────────────────────────────────────────────────────
 
@@ -101,29 +104,31 @@ class CoinBoosterViewModel @Inject constructor(
         }
     }
 
-    fun startBoardQuestions() {
-        repository.sendStartBoardQuestions(gameSessionId)
+    fun startBoardQuestions(moneyWon: Float) {
+        viewModelScope.launch {
+            repository.startBoardPhase(moneyWon)
+        }
     }
 
     // ── Private ───────────────────────────────────────────────────────────────
 
-    private fun handleEvent(event: GameSessionSocketEvent) {
+    private fun handleEvent(event: GameSessionEvent) {
         when (event) {
-            is GameSessionSocketEvent.CoinBoosterStartedPlayerEvent -> {
+            is GameSessionEvent.CoinBoosterStartedPlayerEvent -> {
                 _playerState.value = CoinBoosterPlayerState(
                     questions = event.dto.questions,
                     isFinished = false
                 )
                 _correctAnswers.value = 0
                 _currentQuestionIndex.value = 0
-                startTimer(60)
+                startTimer()
             }
 
-            is GameSessionSocketEvent.CoinBoosterStartedHunterEvent -> {
+            is GameSessionEvent.CoinBoosterStartedHunterEvent -> {
                 // Hunter has no questions — nothing to init beyond waiting
             }
 
-            is GameSessionSocketEvent.CoinBoosterFinishedEvent -> {
+            is GameSessionEvent.CoinBoosterFinishedEvent -> {
                 _finishedPlayers.update {
                     it + CoinBoosterPlayerFinishInfo(
                         playerId = event.payload.playerId,
@@ -137,9 +142,9 @@ class CoinBoosterViewModel @Inject constructor(
         }
     }
 
-    private fun startTimer(totalSeconds: Int) {
+    private fun startTimer() {
         timerJob?.cancel()
-        _timeLeft.value = totalSeconds
+        _timeLeft.value = 60
         timerJob = viewModelScope.launch {
             while (_timeLeft.value > 0) {
                 delay(1000)
@@ -152,10 +157,11 @@ class CoinBoosterViewModel @Inject constructor(
     private fun finish() {
         timerJob?.cancel()
         _playerState.update { it.copy(isFinished = true) }
-        repository.sendFinishCoinBooster(
-            gameSessionId = gameSessionId,
-            correctAnswers = _correctAnswers.value
-        )
+        viewModelScope.launch {
+            repository.finishCoinBooster(
+                correctAnswers = _correctAnswers.value
+            )
+        }
     }
 
     override fun onCleared() {

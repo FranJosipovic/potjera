@@ -10,6 +10,7 @@ data class HunterAnsweringPhaseState(
     val playersAreAnswering: Boolean = false,
     val players: List<PlayersAnsweringPlayer> = emptyList(),
     val hunterAnsweredCorrectly: Boolean? = null, //null -> answer not given yet
+    val hunterWrongAnswer: String? = null,
     val playersAnsweredCorrectly: Boolean? = null,
     val endTimestamp: Long = 0
 )

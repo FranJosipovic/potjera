@@ -1,10 +1,13 @@
 package com.fran.dev.potjera.android.app.game.playersphase
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fran.dev.potjera.android.app.di.GameSessionRepositoryFactory
 import com.fran.dev.potjera.android.app.game.models.GameSessionPlayer
-import com.fran.dev.potjera.android.app.game.models.event.GameSessionSocketEvent
+import com.fran.dev.potjera.android.app.game.models.event.GameSessionEvent
 import com.fran.dev.potjera.android.app.game.models.state.PlayersAnsweringPlayer
+import com.fran.dev.potjera.android.app.game.repository.Difficulty
 import com.fran.dev.potjera.android.app.game.repository.GameSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
@@ -23,8 +26,14 @@ import kotlinx.coroutines.launch
  */
 @HiltViewModel
 class PlayersAnsweringViewModel @Inject constructor(
-    private val repository: GameSessionRepository
+    private val repositoryFactory: GameSessionRepositoryFactory,
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "PlayersAnsweringVM"
+    }
+
+    private lateinit var repository: GameSessionRepository
 
     // ── State ─────────────────────────────────────────────────────────────────
 
@@ -46,7 +55,6 @@ class PlayersAnsweringViewModel @Inject constructor(
     private val _totalSteps = MutableStateFlow(0)
     val totalSteps: StateFlow<Int> = _totalSteps.asStateFlow()
 
-    // One-shot event: phase finished
     private val _phaseFinished = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
     val phaseFinished: SharedFlow<Unit> = _phaseFinished.asSharedFlow()
 
@@ -57,7 +65,9 @@ class PlayersAnsweringViewModel @Inject constructor(
 
     // ── Init ──────────────────────────────────────────────────────────────────
 
-    init {
+    fun init(gameSessionId: String, difficulty: Difficulty?) {
+        Log.d(TAG, "init: gameSessionId=$gameSessionId difficulty=$difficulty")
+        repository = repositoryFactory.get(difficulty)
         viewModelScope.launch {
             repository.events.collect { event -> handleEvent(event) }
         }
@@ -66,64 +76,77 @@ class PlayersAnsweringViewModel @Inject constructor(
     fun setContext(gameSessionId: String, allPlayers: Map<Long, GameSessionPlayer>) {
         this.gameSessionId = gameSessionId
 
-        // Build the player list from current session players (non-hunter, non-eliminated)
-        _playerList.value = allPlayers
-            .filter { !it.value.isHunter && !it.value.isEliminated }
-            .map {
-                PlayersAnsweringPlayer(
-                    playerId = it.value.playerId,
-                    name = it.value.playerName,
-                    emoji = phaseEmojis[it.value.playerId.toInt() % phaseEmojis.size]
-                )
-            }
+        val eligible = allPlayers.values.filter { !it.isHunter && !it.isEliminated }
+        _playerList.value = eligible.map {
+            PlayersAnsweringPlayer(
+                playerId = it.playerId,
+                name     = it.playerName,
+                emoji    = phaseEmojis[it.playerId.toInt() % phaseEmojis.size]
+            )
+        }
+        Log.d(TAG, "setContext: players=${_playerList.value.map { it.name }}")
     }
 
-    // ── Public actions ────────────────────────────────────────────────────────
+    // ── Actions ───────────────────────────────────────────────────────────────
 
     fun buzzIn() {
-        repository.sendBuzzIn(gameSessionId)
+        Log.d(TAG, "buzzIn")
+        viewModelScope.launch { repository.buzzIn() }
     }
 
     fun answerQuestion(answer: String) {
-        repository.sendPlayersAnsweringAnswer(gameSessionId, answer)
+        Log.d(TAG, "answerQuestion: \"$answer\"")
+        viewModelScope.launch { repository.sendPlayersAnsweringAnswer(answer) }
     }
 
-    // ── Private ───────────────────────────────────────────────────────────────
+    // ── Event handler ─────────────────────────────────────────────────────────
 
-    private fun handleEvent(event: GameSessionSocketEvent) {
+    private fun handleEvent(event: GameSessionEvent) {
         when (event) {
-            is GameSessionSocketEvent.PlayersAnsweringPhaseStartEvent -> {
-                _totalSteps.update { _playerList.value.size }
+            is GameSessionEvent.PlayersAnsweringPhaseStartEvent -> {
+                val steps = _playerList.value.size
+                Log.i(TAG, "PlayersAnsweringPhaseStart: question=\"${event.dto.question.question}\"" +
+                        " questionNum=${event.dto.questionNum} totalSteps=$steps")
+                _totalSteps.update { steps }
                 _questionText.update { event.dto.question.question }
                 _currentAnsweringPlayerId.value = null
                 _correctAnswer.value = null
                 _playerAnsweredCorrectly.value = null
             }
 
-            is GameSessionSocketEvent.PlayerBuzzedInEvent -> {
+            is GameSessionEvent.PlayerBuzzedInEvent -> {
+                val name = _playerList.value.firstOrNull { it.playerId == event.dto.playerId }?.name ?: event.dto.playerId
+                Log.d(TAG, "PlayerBuzzedIn: $name (id=${event.dto.playerId})")
                 _currentAnsweringPlayerId.value = event.dto.playerId
             }
 
-            is GameSessionSocketEvent.PlayersAnsweringCorrectEvent -> {
+            is GameSessionEvent.PlayersAnsweringCorrectEvent -> {
+                val name = _playerList.value.firstOrNull { it.playerId == event.dto.playerId }?.name ?: event.dto.playerId
+                Log.i(TAG, "PlayersAnsweringCorrect: $name answered correctly — totalSteps=${_totalSteps.value + 1}")
                 _playerAnsweredCorrectly.update { true }
                 _currentAnsweringPlayerId.update { null }
                 _correctAnswer.update { event.dto.correctAnswer }
                 _totalSteps.update { it + 1 }
             }
 
-            is GameSessionSocketEvent.PlayersAnsweringWrongEvent -> {
+            is GameSessionEvent.PlayersAnsweringWrongEvent -> {
+                val name = _playerList.value.firstOrNull { it.playerId == event.dto.playerId }?.name ?: event.dto.playerId
+                Log.d(TAG, "PlayersAnsweringWrong: $name wrong — correct was \"${event.dto.correctAnswer}\"")
                 _playerAnsweredCorrectly.update { false }
                 _correctAnswer.update { event.dto.correctAnswer }
             }
 
-            is GameSessionSocketEvent.PlayersAnsweringNextQuestionEvent -> {
+            is GameSessionEvent.PlayersAnsweringNextQuestionEvent -> {
+                Log.d(TAG, "PlayersAnsweringNextQuestion: \"${event.dto.question.question}\"" +
+                        " (${event.dto.questionNum}/${event.dto.total})")
                 _playerAnsweredCorrectly.value = null
                 _currentAnsweringPlayerId.update { null }
                 _correctAnswer.update { null }
                 _questionText.update { event.dto.question.question }
             }
 
-            is GameSessionSocketEvent.PlayersAnsweringPhaseFinishedEvent -> {
+            is GameSessionEvent.PlayersAnsweringPhaseFinishedEvent -> {
+                Log.i(TAG, "PlayersAnsweringPhaseFinished: totalSteps=${_totalSteps.value}")
                 viewModelScope.launch { _phaseFinished.emit(Unit) }
             }
 

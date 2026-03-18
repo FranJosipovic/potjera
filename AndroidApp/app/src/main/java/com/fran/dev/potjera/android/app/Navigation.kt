@@ -12,6 +12,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.fran.dev.potjera.android.app.auth.presentation.AuthScreen
 import com.fran.dev.potjera.android.app.game.presentation.GameRoute
+import com.fran.dev.potjera.android.app.game.repository.Difficulty
 import com.fran.dev.potjera.android.app.home.presentation.HomeScreen
 import com.fran.dev.potjera.android.app.profile.presentation.ProfileScreen
 import com.fran.dev.potjera.android.app.room.presentation.create.CreateRoomScreen
@@ -36,7 +37,12 @@ object JoinRoom
 data class Lobby(val roomId: String)
 
 @Serializable
-data class Game(val gameSessionId: String)
+data class Game(
+    val gameSessionId: String,
+    // null  = multiplayer (gameSessionId is the server session)
+    // non-null = singleplayer difficulty
+    val difficulty: String? = null,
+)
 
 @Composable
 fun Navigation(modifier: Modifier) {
@@ -64,6 +70,13 @@ fun Navigation(modifier: Modifier) {
                     navController.navigate(CreateRoom)
                 }, onJoinRoom = {
                     navController.navigate(JoinRoom)
+                }, onSelect = { difficulty ->
+                    navController.navigate(
+                        Game(
+                            gameSessionId = "solo",   // placeholder id, not used by singleplayer repo
+                            difficulty = difficulty.name
+                        )
+                    )
                 })
             }
             composable<Profile> {
@@ -110,8 +123,14 @@ fun Navigation(modifier: Modifier) {
             }
             composable<Game> { backStackEntry ->
                 val game: Game = backStackEntry.toRoute()
+                val diff = if (game.difficulty != null) {
+                    Difficulty.valueOf(game.difficulty)
+                } else {
+                    null
+                }
                 GameRoute(
-                    gameSessionId  = game.gameSessionId,
+                    gameSessionId = game.gameSessionId,
+                    difficulty = diff,
                     onNavigateHome = {
                         navController.navigate(Home) {
                             popUpTo(0) { inclusive = true }

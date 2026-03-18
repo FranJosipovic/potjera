@@ -1,12 +1,16 @@
 package com.fran.dev.potjera.android.app.game.hunterphase
 
+import android.content.SharedPreferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fran.dev.potjera.android.app.di.GameSessionRepositoryFactory
 import com.fran.dev.potjera.android.app.game.models.SuggestionItem
-import com.fran.dev.potjera.android.app.game.models.event.GameSessionSocketEvent
+import com.fran.dev.potjera.android.app.game.models.event.GameSessionEvent
 import com.fran.dev.potjera.android.app.game.models.state.HunterAnsweringPhaseState
 import com.fran.dev.potjera.android.app.game.models.state.PlayersAnsweringPlayer
+import com.fran.dev.potjera.android.app.game.repository.Difficulty
 import com.fran.dev.potjera.android.app.game.repository.GameSessionRepository
+import com.fran.dev.potjera.android.app.game.repository.MultiplayerGameSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -24,9 +28,21 @@ import kotlinx.coroutines.launch
  */
 @HiltViewModel
 class HunterAnsweringViewModel @Inject constructor(
-    private val repository: GameSessionRepository
+    private val repositoryFactory: GameSessionRepositoryFactory,
 ) : ViewModel() {
 
+    private lateinit var repository: GameSessionRepository
+
+    fun init(gameSessionId: String, difficulty: Difficulty?) {
+
+        repository = repositoryFactory.get(difficulty)
+
+        viewModelScope.launch {
+            repository.events.collect { event ->
+                handleEvent(event)
+            }
+        }
+    }
     // ── State ─────────────────────────────────────────────────────────────────
 
     private val _phaseState = MutableStateFlow(HunterAnsweringPhaseState())
@@ -46,11 +62,11 @@ class HunterAnsweringViewModel @Inject constructor(
 
     // ── Init ──────────────────────────────────────────────────────────────────
 
-    init {
-        viewModelScope.launch {
-            repository.events.collect { event -> handleEvent(event) }
-        }
-    }
+//    init {
+//        viewModelScope.launch {
+//            repository.events.collect { event -> handleEvent(event) }
+//        }
+//    }
 
     fun setContext(
         gameSessionId: String,
@@ -63,22 +79,28 @@ class HunterAnsweringViewModel @Inject constructor(
     // ── Public actions ────────────────────────────────────────────────────────
 
     fun sendHunterAnswer(answer: String) {
-        repository.sendHunterAnsweringAnswer(gameSessionId, answer)
+        viewModelScope.launch {
+            repository.sendHunterAnsweringAnswer(answer)
+        }
     }
 
     fun sendPlayerCounterAnswer(answer: String) {
-        repository.sendPlayerCounterAnswer(gameSessionId, answer)
+        viewModelScope.launch {
+            repository.sendPlayerCounterAnswer(answer)
+        }
     }
 
     fun sendSuggestion(suggestion: String) {
-        repository.sendSuggestion(gameSessionId, suggestion)
+        viewModelScope.launch {
+            repository.sendSuggestion(suggestion)
+        }
     }
 
     // ── Private ───────────────────────────────────────────────────────────────
 
-    private fun handleEvent(event: GameSessionSocketEvent) {
+    private fun handleEvent(event: GameSessionEvent) {
         when (event) {
-            is GameSessionSocketEvent.HunterAnsweringPhaseStartEvent -> {
+            is GameSessionEvent.HunterAnsweringPhaseStartEvent -> {
                 val dto = event.dto
                 _phaseState.update {
                     HunterAnsweringPhaseState(
@@ -95,7 +117,7 @@ class HunterAnsweringViewModel @Inject constructor(
                 _suggestions.value = emptyList()
             }
 
-            is GameSessionSocketEvent.HunterAnsweredCorrectEvent -> {
+            is GameSessionEvent.HunterAnsweredCorrectEvent -> {
                 _phaseState.update {
                     it.copy(
                         hunterCorrectAnswers = it.hunterCorrectAnswers + 1,
@@ -105,17 +127,18 @@ class HunterAnsweringViewModel @Inject constructor(
                 }
             }
 
-            is GameSessionSocketEvent.HunterAnsweredWrongEvent -> {
+            is GameSessionEvent.HunterAnsweredWrongEvent -> {
                 _phaseState.update {
                     it.copy(
                         hunterIsAnswering = false,
                         playersAreAnswering = true,
-                        hunterAnsweredCorrectly = false
+                        hunterAnsweredCorrectly = false,
+                        hunterWrongAnswer = event.dto.hunterAnswer
                     )
                 }
             }
 
-            is GameSessionSocketEvent.HunterAnsweringNextQuestionEvent -> {
+            is GameSessionEvent.HunterAnsweringNextQuestionEvent -> {
                 _phaseState.update {
                     it.copy(
                         question = event.dto.question,
@@ -123,13 +146,14 @@ class HunterAnsweringViewModel @Inject constructor(
                         hunterAnsweredCorrectly = null,
                         playersAnsweredCorrectly = null,
                         hunterIsAnswering = true,
-                        playersAreAnswering = false
+                        playersAreAnswering = false,
+                        hunterWrongAnswer = null
                     )
                 }
                 _suggestions.value = emptyList()
             }
 
-            is GameSessionSocketEvent.PlayerCounterAnswerCorrectEvent -> {
+            is GameSessionEvent.PlayerCounterAnswerCorrectEvent -> {
                 _phaseState.update {
                     val newPlayersSteps = if (it.hunterCorrectAnswers == 0) {
                         it.playersSteps + 1
@@ -151,7 +175,7 @@ class HunterAnsweringViewModel @Inject constructor(
                 }
             }
 
-            is GameSessionSocketEvent.PlayerCounterAnswerWrongEvent -> {
+            is GameSessionEvent.PlayerCounterAnswerWrongEvent -> {
                 _phaseState.update {
                     it.copy(
                         correctAnswer = event.dto.correctAnswer,
@@ -161,7 +185,7 @@ class HunterAnsweringViewModel @Inject constructor(
                 }
             }
 
-            is GameSessionSocketEvent.HunterAnsweringPhaseFinishedEvent -> {
+            is GameSessionEvent.HunterAnsweringPhaseFinishedEvent -> {
                 viewModelScope.launch {
                     _phaseState.update { it.copy(hunterWon = event.dto.hunterWon) }
                     viewModelScope.launch {
@@ -172,7 +196,7 @@ class HunterAnsweringViewModel @Inject constructor(
                 }
             }
 
-            is GameSessionSocketEvent.HunterAnsweringSuggestionEvent -> {
+            is GameSessionEvent.HunterAnsweringSuggestionEvent -> {
                 _suggestions.update {
                     it + SuggestionItem(
                         playerId = event.dto.sentBy,
@@ -182,11 +206,11 @@ class HunterAnsweringViewModel @Inject constructor(
                 }
             }
 
-            is GameSessionSocketEvent.HunterTimerPausedEvent -> {
+            is GameSessionEvent.HunterTimerPausedEvent -> {
                 _phaseState.update { it.copy(playersAreAnswering = true) }
             }
 
-            is GameSessionSocketEvent.HunterTimerResumedEvent -> {
+            is GameSessionEvent.HunterTimerResumedEvent -> {
                 _phaseState.update {
                     it.copy(
                         playersAreAnswering = false,

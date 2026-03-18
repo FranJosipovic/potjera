@@ -31,78 +31,78 @@ import com.fran.dev.potjera.android.app.game.models.dto.playersansweringphase.Pl
 import com.fran.dev.potjera.android.app.game.models.dto.playersansweringphase.PlayersAnsweringStartDto
 import com.fran.dev.potjera.android.app.game.models.dto.playersansweringphase.PlayersAnsweringWrongDto
 
-sealed class GameSessionSocketEvent {
+sealed class GameSessionEvent {
     data class CoinBoosterStartedHunterEvent(val dto: CoinBoosterStartHunterDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
     data class CoinBoosterStartedPlayerEvent(val dto: CoinBoosterStartPlayerDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
     data class CoinBoosterFinishedEvent(val payload: CoinBoosterFinishedDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
-    data class GameFinishedEvent(val results: List<GameResultDto>) : GameSessionSocketEvent()
-    data class PlayerLeftEvent(val playerId: Long) : GameSessionSocketEvent()
+    data class GameFinishedEvent(val results: List<GameResultDto>) : GameSessionEvent()
+    data class PlayerLeftEvent(val playerId: Long) : GameSessionEvent()
 
     // board phase — BOARD_PHASE_STARTING and NEXT_PLAYER share same shape
-    data class BoardPhaseStartingEvent(val dto: BoardPhaseStartingDto) : GameSessionSocketEvent()
-    data class MoneyOfferEvent(val dto: MoneyOfferDto) : GameSessionSocketEvent()
-    data class MoneyOfferAcceptedEvent(val dto: MoneyOfferAcceptedDto) : GameSessionSocketEvent()
+    data class BoardPhaseStartingEvent(val dto: BoardPhaseStartingDto) : GameSessionEvent()
+    data class MoneyOfferEvent(val dto: MoneyOfferDto) : GameSessionEvent()
+    data class MoneyOfferAcceptedEvent(val dto: MoneyOfferAcceptedDto) : GameSessionEvent()
 
-    data class NewBoardQuestionEvent(val dto: BoardQuestionDto) : GameSessionSocketEvent()
+    data class NewBoardQuestionEvent(val dto: BoardQuestionDto) : GameSessionEvent()
 
     data class HunterAnsweredQuestionEvent(val dto: HunterAnsweredQuestionDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
     data class PlayerAnsweredQuestionEvent(val dto: PlayerAnsweredQuestionDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
-    data class AnswerRevealedEvent(val dto: AnswerRevealDto) : GameSessionSocketEvent()
-    data class PlayerWonEvent(val dto: PlayerWonDto) : GameSessionSocketEvent()
-    data class PlayerCaughtEvent(val dto: PlayerCaughtDto) : GameSessionSocketEvent()
-    data class BoardPhaseFinishedEvent(val dto: BoardPhaseFinishedDto) : GameSessionSocketEvent()
+    data class AnswerRevealedEvent(val dto: AnswerRevealDto) : GameSessionEvent()
+    data class PlayerWonEvent(val dto: PlayerWonDto) : GameSessionEvent()
+    data class PlayerCaughtEvent(val dto: PlayerCaughtDto) : GameSessionEvent()
+    data class BoardPhaseFinishedEvent(val dto: BoardPhaseFinishedDto) : GameSessionEvent()
 
     // players answering phase
     data class PlayersAnsweringPhaseStartEvent(val dto: PlayersAnsweringStartDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
-    data class PlayerBuzzedInEvent(val dto: PlayerSignedInDto) : GameSessionSocketEvent()
+    data class PlayerBuzzedInEvent(val dto: PlayerSignedInDto) : GameSessionEvent()
     data class PlayersAnsweringCorrectEvent(val dto: PlayersAnsweringCorrectDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
     data class PlayersAnsweringWrongEvent(val dto: PlayersAnsweringWrongDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
     data class PlayersAnsweringNextQuestionEvent(val dto: PlayersAnsweringNextQuestionDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
     data class PlayersAnsweringPhaseFinishedEvent(val dto: PlayersAnsweringFinishedDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
     // hunter answering phase
     data class HunterAnsweringPhaseStartEvent(val dto: HunterAnsweringPhaseStartDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
     data class HunterAnsweredCorrectEvent(val dto: HunterAnsweredCorrectDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
-    data class HunterAnsweredWrongEvent(val dto: HunterAnsweredWrongDto) : GameSessionSocketEvent()
+    data class HunterAnsweredWrongEvent(val dto: HunterAnsweredWrongDto) : GameSessionEvent()
 
     data class PlayerCounterAnswerCorrectEvent(val dto: PlayerCounterAnswerCorrectDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
     data class PlayerCounterAnswerWrongEvent(val dto: PlayerCounterAnswerWrongDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
     data class HunterAnsweringNextQuestionEvent(val dto: HunterAnsweringNextQuestionDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
     data class HunterAnsweringPhaseFinishedEvent(val dto: HunterAnsweringPhaseFinishedDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
     data class HunterAnsweringSuggestionEvent(val dto: HunterAnsweringPhaseSuggestionDto) :
-        GameSessionSocketEvent()
+        GameSessionEvent()
 
-    data class HunterTimerPausedEvent(val dto: HunterTimerPausedDto) : GameSessionSocketEvent()
-    data class HunterTimerResumedEvent(val dto: HunterTimerResumedDto) : GameSessionSocketEvent()
+    data class HunterTimerPausedEvent(val dto: HunterTimerPausedDto) : GameSessionEvent()
+    data class HunterTimerResumedEvent(val dto: HunterTimerResumedDto) : GameSessionEvent()
 }

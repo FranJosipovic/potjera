@@ -525,7 +525,7 @@ private fun BoardLadder(
                 }
 
                 isEarnedStep -> {
-                    offerLabel = "► ${boardState.moneyInGame.toInt()}€ ◄"
+                    offerLabel = "► ${boardState.moneyInGame}€ ◄"
                     offerTextColor = White
                     offerBorderColor = White
                 }

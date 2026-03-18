@@ -149,6 +149,23 @@ public class GameSessionWebSocketController {
 
     //region Players Answering phase
 
+    @MessageMapping("/game-session/{gameSessionId}/start-players-phase")
+    public void onStartPlayersPhase(
+            @DestinationVariable String gameSessionId,
+            Principal principal
+    ) {
+        if (principal == null) {
+            logger.warn("No authenticated user");
+            return;
+        }
+
+        Long userId = Long.parseLong(principal.getName());
+
+        logger.info("User {} is starting players phase {}", userId, gameSessionId);
+
+        gameSessionService.startPlayersAnsweringPhase(gameSessionId);
+    }
+
     @MessageMapping("/game-session/{gameSessionId}/players-answering/buzz-in")
     public void onPlayersAnsweringBuzzIn(
             @DestinationVariable String gameSessionId,

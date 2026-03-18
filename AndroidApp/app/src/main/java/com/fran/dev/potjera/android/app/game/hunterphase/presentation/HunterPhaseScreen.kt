@@ -380,7 +380,11 @@ fun HunterPhaseScreen(
                     true -> { /* feedback card handles it */
                     }
 
-                    false -> HunterWrongBanner()
+                    false -> HunterWrongBanner(
+                        hunterWrongAnswer = state.hunterWrongAnswer,
+                        isHunter
+                    )
+
                     null -> if (!showCorrectAnswer) {
                         HunterAnswerInput(
                             answer = answer,
@@ -392,6 +396,9 @@ fun HunterPhaseScreen(
             }
 
             isCaptain -> {
+                if (state.hunterAnsweredCorrectly == false) {
+                    HunterWrongBanner(hunterWrongAnswer = state.hunterWrongAnswer, isHunter)
+                }
                 CaptainSection(
                     captainInputOpen = state.hunterAnsweredCorrectly == false
                             && state.playersAreAnswering
@@ -404,6 +411,9 @@ fun HunterPhaseScreen(
             }
 
             isRegularPlayer -> {
+                if (state.hunterAnsweredCorrectly == false) {
+                    HunterWrongBanner(hunterWrongAnswer = state.hunterWrongAnswer, isHunter)
+                }
                 when {
                     // players phase open — show suggestion input
                     state.playersAreAnswering && !showCorrectAnswer -> {
@@ -500,7 +510,7 @@ private fun HunterAnswerInput(
 
 //region ── Hunter: answered wrong — players are now answering ─────────────────
 @Composable
-private fun HunterWrongBanner() {
+private fun HunterWrongBanner(hunterWrongAnswer: String?, isHunter: Boolean) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -514,14 +524,24 @@ private fun HunterWrongBanner() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            Text("❌", fontSize = 30.sp)
-            Text(
-                "You answered wrong!",
-                color = Red,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
+            if (isHunter) {
+                Text("❌", fontSize = 30.sp)
+                Text(
+                    "You answered wrong!",
+                    color = Red,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            }
+            if (hunterWrongAnswer != null) {
+                Text(
+                    text = "Hunter answered: \"$hunterWrongAnswer\"",
+                    color = Red.copy(alpha = 0.8f),
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center
+                )
+            }
             Text(
                 "Players are now giving the answer…",
                 color = TextMuted,
@@ -775,7 +795,6 @@ private fun PlayerSuggestionInput(
         }
     }
 }
-
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Previews

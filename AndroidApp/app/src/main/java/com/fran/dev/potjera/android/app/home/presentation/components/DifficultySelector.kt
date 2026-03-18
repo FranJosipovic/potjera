@@ -29,10 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
-enum class Difficulty {
-    EASY, MEDIUM, HARD
-}
+import com.fran.dev.potjera.android.app.game.repository.Difficulty
 
 private data class DifficultyOption(
     val difficulty: Difficulty,

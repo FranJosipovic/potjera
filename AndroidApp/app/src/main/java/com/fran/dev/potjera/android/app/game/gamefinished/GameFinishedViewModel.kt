@@ -1,10 +1,14 @@
 package com.fran.dev.potjera.android.app.game.gamefinished
 
+import android.content.SharedPreferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.fran.dev.potjera.android.app.di.GameSessionRepositoryFactory
 import com.fran.dev.potjera.android.app.game.models.GameFinishPlayerResult
-import com.fran.dev.potjera.android.app.game.models.event.GameSessionSocketEvent
+import com.fran.dev.potjera.android.app.game.models.event.GameSessionEvent
+import com.fran.dev.potjera.android.app.game.repository.Difficulty
 import com.fran.dev.potjera.android.app.game.repository.GameSessionRepository
+import com.fran.dev.potjera.android.app.game.repository.MultiplayerGameSessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,16 +18,21 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class GameFinishedViewModel @Inject constructor(
-    repository: GameSessionRepository
+    private val repositoryFactory: GameSessionRepositoryFactory,
+    private val prefs: SharedPreferences
 ) : ViewModel() {
 
-    private val _results = MutableStateFlow<List<GameFinishPlayerResult>>(emptyList())
-    val results: StateFlow<List<GameFinishPlayerResult>> = _results.asStateFlow()
+    private lateinit var repository: GameSessionRepository
 
-    init {
+    fun init(gameSessionId: String, difficulty: Difficulty?) {
+
+        val token = prefs.getString("token", null) ?: return
+
+        repository = repositoryFactory.get(difficulty)
+
         viewModelScope.launch {
             repository.events.collect { event ->
-                if (event is GameSessionSocketEvent.GameFinishedEvent) {
+                if (event is GameSessionEvent.GameFinishedEvent) {
                     _results.value = event.results.map {
                         GameFinishPlayerResult(
                             playerId = it.playerId,
@@ -34,4 +43,7 @@ class GameFinishedViewModel @Inject constructor(
             }
         }
     }
+    private val _results = MutableStateFlow<List<GameFinishPlayerResult>>(emptyList())
+    val results: StateFlow<List<GameFinishPlayerResult>> = _results.asStateFlow()
+
 }
